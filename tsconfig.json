@@ -12,8 +12,8 @@
     "allowImportingTsExtensions": true
   },
   "include": [
-    "extensions/**/*.ts",
-    "lib/**/*.ts",
+    "shared/**/*.ts",
+    "bundles/**/*.ts",
     "tests/**/*.mjs"
   ]
 }
