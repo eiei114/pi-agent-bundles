@@ -1,6 +1,6 @@
 {
   "name": "pi-agent-bundles",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "private": true,
   "description": "Git-distributed Pi agent bundles for Multica and project-specific runtime defaults.",
   "type": "module",
@@ -54,7 +54,7 @@
     ]
   },
   "dependencies": {
-    "pi-model-fallback": "github:eiei114/pi-model-fallback#v0.2.0",
+    "pi-model-fallback": "github:eiei114/pi-model-fallback#v0.3.0",
     "pi-fff": "^0.1.12",
     "pi-fff-non-ascii-guard": "0.1.6",
     "pi-smart-fetch": "^0.3.12",

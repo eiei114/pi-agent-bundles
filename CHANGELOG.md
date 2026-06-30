@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.4.0
+
+- Consume `pi-model-fallback` Git tag `v0.3.0`, which uses `agent_start` and catches provider SDK error messages on `turn_end`.
+- Document that Multica agents must not pass `--no-extensions`, because it prevents explicit bundle loading in this Pi CLI path.
+
 ## 0.3.0
 
 - Use `pi-model-fallback` from Git tag `v0.2.0` to enable persistent failover state without requiring an npm publish.

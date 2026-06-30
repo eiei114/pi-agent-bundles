@@ -15,7 +15,7 @@ Cursor implementation role for bounded but ambiguous build tasks.
 
 ```json
 {
-  "source": "git:github.com/eiei114/pi-agent-bundles@v0.1.0",
+  "source": "git:github.com/eiei114/pi-agent-bundles@v0.4.0",
   "extensions": [
     "+node_modules/pi-model-fallback/extensions/index.ts",
     "+shared/extensions/seed-model-fallback.ts",

@@ -21,7 +21,7 @@ const DEFAULT_MODEL_FALLBACK_CONFIG = {
 };
 
 export default function seedModelFallback(pi: ExtensionAPI) {
-  pi.on("session_start", async (_event, ctx) => {
+  pi.on("agent_start", async (_event, ctx) => {
     const configPath = modelFallbackConfigPath(ctx);
     if (existsSync(configPath)) {
       ctx.ui.setStatus(STATUS_KEY, "bundle:config-present");
