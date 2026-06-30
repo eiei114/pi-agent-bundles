@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.1
+
+- Add per-agent bundle skeletons for current Multica agent roster.
+- Add bundle authoring guide and unique bundle status commands.
+
 ## 0.1.0
 
 - Initial Git-only Pi agent bundle repo.
