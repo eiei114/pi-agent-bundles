@@ -16,6 +16,25 @@ For project-local install:
 pi install git:github.com/eiei114/pi-agent-bundles@v0.1.0 -l
 ```
 
+## Bundled existing extensions
+
+`pi-agent-bundles` now includes the extension packages previously repeated in Multica agent custom args:
+
+- `pi-model-fallback`
+- `pi-fff`
+- `pi-fff-non-ascii-guard@0.1.6`
+- `pi-smart-fetch`
+- `pi-multica-spine`
+- `context-mode`
+- `@howaboua/pi-codex-conversion`
+- `@offbynan/pi-cursor-provider`
+
+Agents can use one custom arg pair:
+
+```txt
+--no-extensions -e git:github.com/eiei114/pi-agent-bundles@v0.2.0
+```
+
 ## Included bundles
 
 Each bundle has its own `bundles/<slug>/README.md` and unique `/<slug>:bundle-status` command.

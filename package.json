@@ -1,6 +1,6 @@
 {
   "name": "pi-agent-bundles",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "private": true,
   "description": "Git-distributed Pi agent bundles for Multica and project-specific runtime defaults.",
   "type": "module",
@@ -39,17 +39,39 @@
     "extensions": [
       "./shared/extensions",
       "./bundles/*/extensions",
-      "./node_modules/pi-model-fallback/extensions"
+      "./node_modules/pi-model-fallback/extensions",
+      "./node_modules/pi-fff/index.ts",
+      "./node_modules/pi-fff-non-ascii-guard/extensions",
+      "./node_modules/pi-smart-fetch/dist/index.js",
+      "./node_modules/pi-multica-spine/extensions",
+      "./node_modules/context-mode/build/adapters/pi/extension.js",
+      "./node_modules/@howaboua/pi-codex-conversion/src/index.ts",
+      "./node_modules/@offbynan/pi-cursor-provider/index.ts"
     ],
     "skills": [
-      "./bundles/*/skills"
+      "./bundles/*/skills",
+      "./node_modules/context-mode/skills"
     ]
   },
   "dependencies": {
-    "pi-model-fallback": "^0.1.0"
+    "pi-model-fallback": "^0.1.0",
+    "pi-fff": "^0.1.12",
+    "pi-fff-non-ascii-guard": "0.1.6",
+    "pi-smart-fetch": "^0.3.12",
+    "pi-multica-spine": "^0.1.2",
+    "context-mode": "^1.0.169",
+    "@howaboua/pi-codex-conversion": "^2.1.6",
+    "@offbynan/pi-cursor-provider": "^0.5.3"
   },
   "bundledDependencies": [
-    "pi-model-fallback"
+    "@howaboua/pi-codex-conversion",
+    "@offbynan/pi-cursor-provider",
+    "context-mode",
+    "pi-fff",
+    "pi-fff-non-ascii-guard",
+    "pi-model-fallback",
+    "pi-multica-spine",
+    "pi-smart-fetch"
   ],
   "peerDependencies": {
     "@earendil-works/pi-ai": "*",
