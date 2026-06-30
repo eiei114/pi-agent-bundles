@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.0
+
+- Use `pi-model-fallback` from Git tag `v0.2.0` to enable persistent failover state without requiring an npm publish.
+- Future sessions preselect DeepSeek fallback after a matching ZAI 429/5xx failure until cooldown expiry.
+
 ## 0.2.0
 
 - Bundle existing Multica agent extension package dependencies so agent `custom_args` can use only this Git package.

@@ -23,7 +23,6 @@ const bundledPackages = [
   "context-mode",
   "pi-fff",
   "pi-fff-non-ascii-guard",
-  "pi-model-fallback",
   "pi-multica-spine",
   "pi-smart-fetch",
 ];
@@ -40,7 +39,8 @@ test("package loads shared, agent bundle, and delegated dependency extensions", 
   }
 });
 
-test("package bundles all Multica agent extension dependencies", () => {
+test("package declares all Multica agent extension dependencies", () => {
+  assert.ok(packageJson.dependencies["pi-model-fallback"], "missing dependency pi-model-fallback");
   for (const name of bundledPackages) {
     assert.ok(packageJson.dependencies[name], `missing dependency ${name}`);
     assert.ok(packageJson.bundledDependencies.includes(name), `missing bundled dependency ${name}`);
