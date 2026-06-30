@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.5.0
+
+- Keep context-mode tools enabled but stop auto-loading the context-mode skill for Multica work-agent runs.
+- Add a post-context-mode Multica run guard that removes the context-mode routing anchor from assigned-issue turns and forces the agent to begin the issue workflow instead of reporting context-mode status.
+
 ## 0.4.0
 
 - Consume `pi-model-fallback` Git tag `v0.3.0`, which uses `agent_start` and catches provider SDK error messages on `turn_end`.

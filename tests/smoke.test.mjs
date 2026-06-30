@@ -46,3 +46,10 @@ test("package declares all Multica agent extension dependencies", () => {
     assert.ok(packageJson.bundledDependencies.includes(name), `missing bundled dependency ${name}`);
   }
 });
+
+
+test("context-mode tools enabled without auto-loading context-mode skill", () => {
+  assert.ok(packageJson.pi.extensions.includes("./node_modules/context-mode/build/adapters/pi/extension.js"));
+  assert.ok(packageJson.pi.extensions.includes("./shared/post-context-mode/extensions"));
+  assert.ok(!packageJson.pi.skills.includes("./node_modules/context-mode/skills"));
+});

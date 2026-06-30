@@ -1,6 +1,6 @@
 {
   "name": "pi-agent-bundles",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "private": true,
   "description": "Git-distributed Pi agent bundles for Multica and project-specific runtime defaults.",
   "type": "module",
@@ -45,12 +45,12 @@
       "./node_modules/pi-smart-fetch/dist/index.js",
       "./node_modules/pi-multica-spine/extensions",
       "./node_modules/context-mode/build/adapters/pi/extension.js",
+      "./shared/post-context-mode/extensions",
       "./node_modules/@howaboua/pi-codex-conversion/src/index.ts",
       "./node_modules/@offbynan/pi-cursor-provider/index.ts"
     ],
     "skills": [
-      "./bundles/*/skills",
-      "./node_modules/context-mode/skills"
+      "./bundles/*/skills"
     ]
   },
   "dependencies": {

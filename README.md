@@ -94,3 +94,8 @@ Example filtered install in settings:
 ```
 
 See `docs/bundle-authoring.md` before adding or changing a bundle.
+
+
+## Multica run guard
+
+`v0.5.0` keeps context-mode tools enabled while preventing context-mode startup/status text from becoming the task. For assigned Multica issue runs, the bundle strips the context-mode routing anchor from the final user-context message and injects a guard that starts with `multica issue get <issue> --output json`.
