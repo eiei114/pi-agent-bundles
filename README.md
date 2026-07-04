@@ -9,13 +9,13 @@ This repo is intentionally Git-only. It is not meant to be published to npm. Ins
 ## Install
 
 ```bash
-pi install git:github.com/eiei114/pi-agent-bundles@v0.6.3
+pi install git:github.com/eiei114/pi-agent-bundles@v0.6.4
 ```
 
 For project-local install:
 
 ```bash
-pi install git:github.com/eiei114/pi-agent-bundles@v0.6.3 -l
+pi install git:github.com/eiei114/pi-agent-bundles@v0.6.4 -l
 ```
 
 ## Bundled existing extensions
@@ -24,7 +24,7 @@ pi install git:github.com/eiei114/pi-agent-bundles@v0.6.3 -l
 
 - `pi-model-fallback`
 - `pi-fff`
-- `pi-fff-non-ascii-guard@0.1.6`
+- `pi-fff-non-ascii-guard`
 - `pi-smart-fetch`
 - `pi-multica-spine`
 - `context-mode`
@@ -32,10 +32,12 @@ pi install git:github.com/eiei114/pi-agent-bundles@v0.6.3 -l
 - `@offbynan/pi-cursor-provider`
 - `pi-mcp-adapter`
 
-Agents can use one custom arg pair:
+Agents should use the Git package plus a bundle selector. This keeps Multica config portable across runtimes and avoids machine-local `C:/...` paths:
 
 ```txt
---no-extensions -e git:github.com/eiei114/pi-agent-bundles@v0.6.3
+--no-extensions
+-e git:github.com/eiei114/pi-agent-bundles@v0.6.4
+--agent-bundle <bundle-slug>
 ```
 
 ## Included bundles
@@ -68,7 +70,9 @@ Generic iOS Multica agents should use the dedicated iOS bundle slices:
 - `ios-codex55-fixer` — Xcode/SwiftPM/signing/build-log repair
 - `ios-codex55-planner` — architecture, issue slicing, App Store/privacy/testing review
 
-`pi-mcp-adapter` is bundled so agents can use MCP servers such as `xcodebuildmcp` without loading every MCP tool directly into the prompt. MCP server definitions and auth state are intentionally not stored in this repo; configure them through `.mcp.json`, `~/.config/mcp/mcp.json`, `<Pi agent dir>/mcp.json`, or `.pi/mcp.json`. Each iOS bundle also includes a secret-free `mcp.json` that can be passed with `--mcp-config`; it defines a lazy `xcodebuildmcp` server through `npx -y xcodebuildmcp@2.6.2 mcp` with direct MCP tools disabled by default.
+`pi-mcp-adapter` is bundled so agents can use MCP servers such as `xcodebuildmcp` without loading every MCP tool directly into the prompt. Each iOS bundle includes a secret-free `mcp.json` template, but Multica agents should store that JSON through `multica agent update --mcp-config-file bundles/<slug>/mcp.json` instead of passing a local `--mcp-config C:/...` path in custom args.
+
+The iOS bundle README files intentionally use role-specific git-package args rather than loading the full extension set everywhere: Cursor/UI and Codex builder/fixer bundles include MCP/context-mode, while the planner bundle keeps only planning/review essentials.
 
 ## Shared fallback seed
 
@@ -93,23 +97,7 @@ Default seeded fallback config:
 
 ## Multiple bundles in one repo
 
-Add more bundles under `bundles/<bundle-name>/extensions` or `bundles/<bundle-name>/skills`. Pi package filters can include only the resources a given agent should load.
-
-Example filtered install in settings:
-
-```json
-{
-  "source": "git:github.com/eiei114/pi-agent-bundles@v0.6.3",
-  "extensions": [
-    "+node_modules/pi-model-fallback/extensions/index.ts",
-    "+shared/extensions/seed-model-fallback.ts",
-    "+bundles/pi-ace-balanced/extensions/*.ts"
-  ],
-  "skills": [
-    "+bundles/pi-ace-balanced/skills/*/SKILL.md"
-  ]
-}
-```
+Add more bundles under `bundles/<bundle-name>/extensions` or `bundles/<bundle-name>/skills`. For Multica agents, prefer adding the role to `shared/extensions/agent-bundle-loader.ts` and selecting it with `--agent-bundle <slug>` so the agent config stays portable.
 
 See `docs/bundle-authoring.md` before adding or changing a bundle.
 

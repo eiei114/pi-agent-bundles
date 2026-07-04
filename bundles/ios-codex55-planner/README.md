@@ -8,48 +8,36 @@ Planning/review role for iOS architecture, issue slicing, App Store/privacy chec
 
 ## Resources
 
+- `extensions/index.ts` — loads this bundle's role-specific extension profile.
 - `extensions/status.ts` — registers `/ios-codex55-planner:bundle-status` for load verification.
 - `skills/` — reserved for future agent-specific skills.
-- `mcp.json` — agent-specific MCP adapter config. Starts with no servers and safe token-efficient defaults.
-- Delegated Pi extensions are loaded through the filtered install example below, including `pi-mcp-adapter` for MCP proxy/direct-tool support.
+- `mcp.json` — source-controlled MCP adapter config that can be copied into the Multica agent MCP config. No secrets.
+- Delegated Pi extensions are loaded by `extensions/index.ts`; Multica custom args should point at the git package plus `--agent-bundle`, not local runtime paths.
 
 ## Operating notes
 
 - Use for review gates, implementation sequencing, and product/architecture tradeoff decisions.
 - MCP adapter is available for read-only discovery if project MCP servers are configured, but implementation agents should run most build/test workflows.
-- MCP server definitions are not stored in this bundle. Put them in `.mcp.json`, `~/.config/mcp/mcp.json`, `<Pi agent dir>/mcp.json`, or `.pi/mcp.json`.
+- Use the checked-in `mcp.json` as a non-secret template, then store the actual agent MCP config in Multica instead of passing a local path.
 - Do not commit Apple credentials, MCP OAuth tokens, signing assets, or personal simulator state.
 
 ## Agent-specific MCP config
 
-This bundle owns `mcp.json` for per-agent MCP settings. Point the Multica agent at it with:
+Planner does not load MCP by default. Keep the Multica agent MCP config empty unless a planning task explicitly needs MCP-backed discovery.
+
+## Recommended Multica custom args
+
+Keep Multica agent config portable: load the git package and select the role profile. Do not pass local `C:/...` extension paths; runtime machines may have different paths.
 
 ```txt
---mcp-config C:/Users/Keisu/Projects/OSS/pi-agent-bundles/bundles/ios-codex55-planner/mcp.json
+--no-extensions
+-e git:github.com/eiei114/pi-agent-bundles@v0.6.4
+--agent-bundle ios-codex55-planner
 ```
 
-The file includes a lazy `xcodebuildmcp` server by default (`npx -y xcodebuildmcp@2.6.2 mcp`) with `directTools: false` so Pi uses the token-efficient MCP proxy. Add only non-secret server definitions here when a server should be available only to this agent, or keep project-wide servers in `.mcp.json`. Never commit OAuth tokens, Apple credentials, signing assets, or machine-specific auth state.
+No MCP config is passed by default.
 
-## Recommended filtered install
-
-```json
-{
-  "source": "git:github.com/eiei114/pi-agent-bundles@v0.6.3",
-  "extensions": [
-    "+node_modules/pi-model-fallback/extensions/index.ts",
-    "+shared/extensions/seed-model-fallback.ts",
-    "+node_modules/pi-smart-fetch/dist/index.js",
-    "+node_modules/pi-multica-spine/extensions",
-    "+node_modules/@howaboua/pi-codex-conversion/src/index.ts",
-    "+bundles/ios-codex55-planner/extensions/*.ts"
-  ],
-  "skills": [
-    "+bundles/ios-codex55-planner/skills/*/SKILL.md"
-  ]
-}
-```
-
-Extension profile: Planner keeps only fallback, docs fetch, Multica context, Codex provider, and planner status. No fff/context-mode/MCP by default.
+Extension profile: Codex provider, smart-fetch, Multica spine, and bundle status. No MCP/context-mode/fff by default.
 
 ## Rules
 

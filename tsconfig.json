@@ -15,5 +15,9 @@
     "shared/**/*.ts",
     "bundles/**/*.ts",
     "tests/**/*.mjs"
+  ],
+  "exclude": [
+    "shared/extensions/agent-bundle-loader.ts",
+    "bundles/**/extensions/index.ts"
   ]
 }

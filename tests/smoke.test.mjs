@@ -5,6 +5,10 @@ import test from "node:test";
 const packageJson = JSON.parse(await readFile(new URL("../package.json", import.meta.url), "utf8"));
 
 const requiredExtensions = [
+  "./shared/extensions/agent-bundle-loader.ts",
+];
+
+const forbiddenGlobalExtensions = [
   "./shared/extensions",
   "./bundles/*/extensions",
   "./node_modules/pi-model-fallback/extensions",
@@ -63,9 +67,11 @@ test("package is private git-only bundle", () => {
   assert.equal(packageJson.publishConfig, undefined);
 });
 
-test("package loads shared, agent bundle, and delegated dependency extensions", () => {
-  for (const extension of requiredExtensions) {
-    assert.ok(packageJson.pi.extensions.includes(extension), `missing extension ${extension}`);
+test("package loads only the bundle selector globally", () => {
+  assert.deepEqual(packageJson.pi.extensions, requiredExtensions);
+  assert.deepEqual(packageJson.pi.skills, []);
+  for (const extension of forbiddenGlobalExtensions) {
+    assert.ok(!packageJson.pi.extensions.includes(extension), `should not globally load ${extension}`);
   }
 });
 
@@ -78,9 +84,11 @@ test("package declares all Multica agent extension dependencies", () => {
 });
 
 
-test("context-mode tools enabled without auto-loading context-mode skill", () => {
-  assert.ok(packageJson.pi.extensions.includes("./node_modules/context-mode/build/adapters/pi/extension.js"));
-  assert.ok(packageJson.pi.extensions.includes("./shared/post-context-mode/extensions"));
+test("context-mode is loaded only through selected role bundles", async () => {
+  const builderIndex = await readFile(new URL("../bundles/ios-codex54-builder/extensions/index.ts", import.meta.url), "utf8");
+  const plannerIndex = await readFile(new URL("../bundles/ios-codex55-planner/extensions/index.ts", import.meta.url), "utf8");
+  assert.ok(builderIndex.includes("context-mode/build/adapters/pi/extension.js"));
+  assert.ok(!plannerIndex.includes("context-mode"));
   assert.ok(!packageJson.pi.skills.includes("./node_modules/context-mode/skills"));
 });
 
@@ -90,17 +98,17 @@ test("package includes dedicated generic iOS agent bundles", async () => {
     const status = await readFile(new URL(`../bundles/${slug}/extensions/status.ts`, import.meta.url), "utf8");
     const mcp = JSON.parse(await readFile(new URL(`../bundles/${slug}/mcp.json`, import.meta.url), "utf8"));
     assert.match(readme, new RegExp(String.raw`Bundle slug: \`${slug}\``));
-    assert.match(readme, new RegExp(String.raw`--mcp-config .*${slug}/mcp\.json`));
+    assert.match(readme, new RegExp(String.raw`-e git:github.com/eiei114/pi-agent-bundles@v0.6.4`));
+    assert.match(readme, new RegExp(String.raw`--agent-bundle ${slug}`));
+    assert.ok(!readme.includes("-e C:/"));
     assert.match(status, new RegExp(`${slug}:bundle-status`));
-    const extensionStart = readme.indexOf('  "extensions": [');
-    const skillsStart = readme.indexOf('  "skills": [', extensionStart);
-    const extensionBlock = readme.slice(extensionStart, skillsStart);
+    const index = await readFile(new URL(`../bundles/${slug}/extensions/index.ts`, import.meta.url), "utf8");
     const profile = iosExtensionProfiles[slug];
     for (const needle of profile.includes) {
-      assert.ok(extensionBlock.includes(needle), `${slug} should include ${needle}`);
+      assert.ok(index.includes(needle), `${slug} should include ${needle}`);
     }
     for (const needle of profile.excludes) {
-      assert.ok(!extensionBlock.includes(needle), `${slug} should not include ${needle}`);
+      assert.ok(!index.includes(needle), `${slug} should not include ${needle}`);
     }
     assert.equal(mcp.mcpServers.xcodebuildmcp.command, "npx");
     assert.deepEqual(mcp.mcpServers.xcodebuildmcp.args, ["-y", "xcodebuildmcp@2.6.2", "mcp"]);

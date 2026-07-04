@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## 0.6.4
+
+- Update bundled runtime extension dependencies to their latest published versions.
+- Add a git-package `--agent-bundle <slug>` loader so Multica custom args no longer need machine-local extension paths.
+- Move iOS MCP setup out of local `--mcp-config <path>` custom args; store the JSON in the Multica agent MCP config instead.
+
 ## 0.6.3
 
 - Narrow iOS bundle filtered install examples so each agent loads only role-relevant Pi extensions.
