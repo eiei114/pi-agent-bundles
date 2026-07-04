@@ -33,10 +33,11 @@ The file includes a lazy `xcodebuildmcp` server by default (`npx -y xcodebuildmc
 
 ## Recommended Multica custom args
 
-Keep Multica agent config portable: load the git package and select the role profile. Do not pass local `C:/...` extension paths; runtime machines may have different paths. Do not add `--no-extensions`; Pi skips Git package extension loading when that flag is present.
+Keep Multica agent config portable: install the Git package on the runtime, then load Pi's documented Git checkout path. Do not pass machine-local `C:/...` extension paths; runtime machines may have different paths.
 
 ```txt
--e git:github.com/eiei114/pi-agent-bundles@v0.6.5
+--no-extensions
+-e ~/.pi/agent/git/github.com/eiei114/pi-agent-bundles/shared/extensions/agent-bundle-loader.ts
 --agent-bundle ios-cursor-builder
 ```
 

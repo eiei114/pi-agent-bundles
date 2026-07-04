@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## 0.6.6
+
+- Restore `--no-extensions` in recommended Multica args while avoiding machine-local paths by loading the installed Git package checkout under `~/.pi/agent/git/...`.
+
 ## 0.6.5
 
 - Document and validate Git package runtime usage without `--no-extensions`, because Pi disables Git package extension loading when `--no-extensions` is present.
