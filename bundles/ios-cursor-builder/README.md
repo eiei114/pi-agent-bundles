@@ -28,13 +28,13 @@ This bundle owns `mcp.json` for per-agent MCP settings. Point the Multica agent 
 --mcp-config C:/Users/Keisu/Projects/OSS/pi-agent-bundles/bundles/ios-cursor-builder/mcp.json
 ```
 
-The file intentionally starts with `"mcpServers": {}`. Add non-secret server definitions there when a server should be available only to this agent, or keep project-wide servers in `.mcp.json`. Never commit OAuth tokens, Apple credentials, signing assets, or machine-specific auth state.
+The file includes a lazy `xcodebuildmcp` server by default (`npx -y xcodebuildmcp@2.6.2 mcp`) with `directTools: false` so Pi uses the token-efficient MCP proxy. Add only non-secret server definitions here when a server should be available only to this agent, or keep project-wide servers in `.mcp.json`. Never commit OAuth tokens, Apple credentials, signing assets, or machine-specific auth state.
 
 ## Recommended filtered install
 
 ```json
 {
-  "source": "git:github.com/eiei114/pi-agent-bundles@v0.6.0",
+  "source": "git:github.com/eiei114/pi-agent-bundles@v0.6.2",
   "extensions": [
     "+node_modules/pi-model-fallback/extensions/index.ts",
     "+shared/extensions/seed-model-fallback.ts",

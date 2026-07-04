@@ -73,7 +73,10 @@ test("package includes dedicated generic iOS agent bundles", async () => {
     assert.match(readme, /pi-mcp-adapter/);
     assert.match(readme, new RegExp(String.raw`--mcp-config .*${slug}/mcp\.json`));
     assert.match(status, new RegExp(`${slug}:bundle-status`));
-    assert.deepEqual(mcp.mcpServers, {});
+    assert.equal(mcp.mcpServers.xcodebuildmcp.command, "npx");
+    assert.deepEqual(mcp.mcpServers.xcodebuildmcp.args, ["-y", "xcodebuildmcp@2.6.2", "mcp"]);
+    assert.equal(mcp.mcpServers.xcodebuildmcp.lifecycle, "lazy");
+    assert.equal(mcp.mcpServers.xcodebuildmcp.directTools, false);
     assert.equal(mcp.settings.outputGuard, true);
     assert.equal(mcp.settings.directTools, false);
   }

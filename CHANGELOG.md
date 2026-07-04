@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+## 0.6.2
+
+- Configure each generic iOS bundle's per-agent `mcp.json` with a lazy `xcodebuildmcp` server using `npx -y xcodebuildmcp@2.6.2 mcp`.
+- Keep MCP direct tools disabled by default and rely on the token-efficient proxy.
+
 ## 0.6.1
 
 - Add per-agent `mcp.json` files for the generic iOS bundles so each Multica agent can use its own MCP adapter config via `--mcp-config`.

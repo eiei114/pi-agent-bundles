@@ -5,6 +5,19 @@
     "idleTimeout": 10,
     "outputGuard": true
   },
-  "mcpServers": {},
-  "_comment": "ios-codex54-builder: build/test/run workflows for implementation slices. Add non-secret MCP server definitions here or use shared .mcp.json files. Do not commit tokens or OAuth state."
+  "mcpServers": {
+    "xcodebuildmcp": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "xcodebuildmcp@2.6.2",
+        "mcp"
+      ],
+      "lifecycle": "lazy",
+      "idleTimeout": 10,
+      "requestTimeoutMs": 300000,
+      "directTools": false
+    }
+  },
+  "_comment": "ios-codex54-builder: agent-local xcodebuildmcp server via pi-mcp-adapter. Keep secrets and auth state out of this file; use env vars or machine-local MCP override files for credentials."
 }
