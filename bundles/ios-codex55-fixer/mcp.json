@@ -1,0 +1,10 @@
+{
+  "settings": {
+    "toolPrefix": "server",
+    "directTools": false,
+    "idleTimeout": 10,
+    "outputGuard": true
+  },
+  "mcpServers": {},
+  "_comment": "ios-codex55-fixer: Xcode/SwiftPM/build-log repair and simulator debugging. Add non-secret MCP server definitions here or use shared .mcp.json files. Do not commit tokens or OAuth state."
+}

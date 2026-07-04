@@ -68,8 +68,13 @@ test("package includes dedicated generic iOS agent bundles", async () => {
   for (const slug of iosBundleSlugs) {
     const readme = await readFile(new URL(`../bundles/${slug}/README.md`, import.meta.url), "utf8");
     const status = await readFile(new URL(`../bundles/${slug}/extensions/status.ts`, import.meta.url), "utf8");
-    assert.match(readme, new RegExp(`Bundle slug: \`${slug}\``));
+    const mcp = JSON.parse(await readFile(new URL(`../bundles/${slug}/mcp.json`, import.meta.url), "utf8"));
+    assert.match(readme, new RegExp(String.raw`Bundle slug: \`${slug}\``));
     assert.match(readme, /pi-mcp-adapter/);
+    assert.match(readme, new RegExp(String.raw`--mcp-config .*${slug}/mcp\.json`));
     assert.match(status, new RegExp(`${slug}:bundle-status`));
+    assert.deepEqual(mcp.mcpServers, {});
+    assert.equal(mcp.settings.outputGuard, true);
+    assert.equal(mcp.settings.directTools, false);
   }
 });

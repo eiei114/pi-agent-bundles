@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+## 0.6.1
+
+- Add per-agent `mcp.json` files for the generic iOS bundles so each Multica agent can use its own MCP adapter config via `--mcp-config`.
+- Document per-agent MCP config ownership and keep committed configs secret-free with empty `mcpServers` defaults.
+
 ## 0.6.0
 
 - Add dedicated generic iOS agent bundle slices for Cursor Builder, Codex 5.4 Builder, Codex 5.5 Fixer, and Codex 5.5 Planner.

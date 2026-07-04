@@ -59,3 +59,5 @@ When a bundle needs MCP-backed workflows, load `pi-mcp-adapter` through the pack
 ```
 
 Do not commit `.mcp.json` files containing secrets, OAuth state, Apple credentials, signing assets, or machine-specific auth tokens.
+
+For per-agent MCP configuration, store a secret-free `bundles/<agent-slug>/mcp.json` with empty `mcpServers` defaults and pass it with `--mcp-config`.

@@ -1,0 +1,10 @@
+{
+  "settings": {
+    "toolPrefix": "server",
+    "directTools": false,
+    "idleTimeout": 10,
+    "outputGuard": true
+  },
+  "mcpServers": {},
+  "_comment": "ios-codex54-builder: build/test/run workflows for implementation slices. Add non-secret MCP server definitions here or use shared .mcp.json files. Do not commit tokens or OAuth state."
+}

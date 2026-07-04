@@ -9,13 +9,13 @@ This repo is intentionally Git-only. It is not meant to be published to npm. Ins
 ## Install
 
 ```bash
-pi install git:github.com/eiei114/pi-agent-bundles@v0.6.0
+pi install git:github.com/eiei114/pi-agent-bundles@v0.6.1
 ```
 
 For project-local install:
 
 ```bash
-pi install git:github.com/eiei114/pi-agent-bundles@v0.6.0 -l
+pi install git:github.com/eiei114/pi-agent-bundles@v0.6.1 -l
 ```
 
 ## Bundled existing extensions
@@ -35,7 +35,7 @@ pi install git:github.com/eiei114/pi-agent-bundles@v0.6.0 -l
 Agents can use one custom arg pair:
 
 ```txt
---no-extensions -e git:github.com/eiei114/pi-agent-bundles@v0.6.0
+--no-extensions -e git:github.com/eiei114/pi-agent-bundles@v0.6.1
 ```
 
 ## Included bundles
@@ -68,7 +68,7 @@ Generic iOS Multica agents should use the dedicated iOS bundle slices:
 - `ios-codex55-fixer` — Xcode/SwiftPM/signing/build-log repair
 - `ios-codex55-planner` — architecture, issue slicing, App Store/privacy/testing review
 
-`pi-mcp-adapter` is bundled so agents can use MCP servers such as `xcodebuildmcp` without loading every MCP tool directly into the prompt. MCP server definitions and auth state are intentionally not stored in this repo; configure them through `.mcp.json`, `~/.config/mcp/mcp.json`, `<Pi agent dir>/mcp.json`, or `.pi/mcp.json`.
+`pi-mcp-adapter` is bundled so agents can use MCP servers such as `xcodebuildmcp` without loading every MCP tool directly into the prompt. MCP server definitions and auth state are intentionally not stored in this repo; configure them through `.mcp.json`, `~/.config/mcp/mcp.json`, `<Pi agent dir>/mcp.json`, or `.pi/mcp.json`. Each iOS bundle also includes a secret-free `mcp.json` that can be passed with `--mcp-config` when an agent needs per-agent MCP settings.
 
 ## Shared fallback seed
 
@@ -99,7 +99,7 @@ Example filtered install in settings:
 
 ```json
 {
-  "source": "git:github.com/eiei114/pi-agent-bundles@v0.6.0",
+  "source": "git:github.com/eiei114/pi-agent-bundles@v0.6.1",
   "extensions": [
     "+node_modules/pi-model-fallback/extensions/index.ts",
     "+shared/extensions/seed-model-fallback.ts",

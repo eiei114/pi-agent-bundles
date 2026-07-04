@@ -1,0 +1,10 @@
+{
+  "settings": {
+    "toolPrefix": "server",
+    "directTools": false,
+    "idleTimeout": 10,
+    "outputGuard": true
+  },
+  "mcpServers": {},
+  "_comment": "ios-cursor-builder: UI implementation, simulator screenshots, visual verification. Add non-secret MCP server definitions here or use shared .mcp.json files. Do not commit tokens or OAuth state."
+}

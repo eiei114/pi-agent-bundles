@@ -10,6 +10,7 @@ Repair role for Xcode/SwiftPM/signing/build-log issues, simulator debugging, and
 
 - `extensions/status.ts` — registers `/ios-codex55-fixer:bundle-status` for load verification.
 - `skills/` — reserved for future agent-specific skills.
+- `mcp.json` — agent-specific MCP adapter config. Starts with no servers and safe token-efficient defaults.
 - Delegated Pi extensions are loaded through the filtered install example below, including `pi-mcp-adapter` for MCP proxy/direct-tool support.
 
 ## Operating notes
@@ -18,6 +19,16 @@ Repair role for Xcode/SwiftPM/signing/build-log issues, simulator debugging, and
 - Context-mode and MCP adapter support are included for large logs and xcodebuildmcp workflows.
 - MCP server definitions are not stored in this bundle. Put them in `.mcp.json`, `~/.config/mcp/mcp.json`, `<Pi agent dir>/mcp.json`, or `.pi/mcp.json`.
 - Do not commit Apple credentials, MCP OAuth tokens, signing assets, or personal simulator state.
+
+## Agent-specific MCP config
+
+This bundle owns `mcp.json` for per-agent MCP settings. Point the Multica agent at it with:
+
+```txt
+--mcp-config C:/Users/Keisu/Projects/OSS/pi-agent-bundles/bundles/ios-codex55-fixer/mcp.json
+```
+
+The file intentionally starts with `"mcpServers": {}`. Add non-secret server definitions there when a server should be available only to this agent, or keep project-wide servers in `.mcp.json`. Never commit OAuth tokens, Apple credentials, signing assets, or machine-specific auth state.
 
 ## Recommended filtered install
 
