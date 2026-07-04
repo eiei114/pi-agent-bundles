@@ -9,13 +9,13 @@ This repo is intentionally Git-only. It is not meant to be published to npm. Ins
 ## Install
 
 ```bash
-pi install git:github.com/eiei114/pi-agent-bundles@v0.1.0
+pi install git:github.com/eiei114/pi-agent-bundles@v0.6.0
 ```
 
 For project-local install:
 
 ```bash
-pi install git:github.com/eiei114/pi-agent-bundles@v0.1.0 -l
+pi install git:github.com/eiei114/pi-agent-bundles@v0.6.0 -l
 ```
 
 ## Bundled existing extensions
@@ -30,11 +30,12 @@ pi install git:github.com/eiei114/pi-agent-bundles@v0.1.0 -l
 - `context-mode`
 - `@howaboua/pi-codex-conversion`
 - `@offbynan/pi-cursor-provider`
+- `pi-mcp-adapter`
 
 Agents can use one custom arg pair:
 
 ```txt
---no-extensions -e git:github.com/eiei114/pi-agent-bundles@v0.2.0
+--no-extensions -e git:github.com/eiei114/pi-agent-bundles@v0.6.0
 ```
 
 ## Included bundles
@@ -53,6 +54,21 @@ Each bundle has its own `bundles/<slug>/README.md` and unique `/<slug>:bundle-st
 - `cursor-patch-runner`
 - `codex-release-engineer`
 - `multica-intake-agent`
+- `ios-cursor-builder`
+- `ios-codex54-builder`
+- `ios-codex55-fixer`
+- `ios-codex55-planner`
+
+## iOS agent bundles and MCP
+
+Generic iOS Multica agents should use the dedicated iOS bundle slices:
+
+- `ios-cursor-builder` — SwiftUI/UI-heavy implementation and visual verification
+- `ios-codex54-builder` — stable implementation, SwiftPM/Xcode builds, tests
+- `ios-codex55-fixer` — Xcode/SwiftPM/signing/build-log repair
+- `ios-codex55-planner` — architecture, issue slicing, App Store/privacy/testing review
+
+`pi-mcp-adapter` is bundled so agents can use MCP servers such as `xcodebuildmcp` without loading every MCP tool directly into the prompt. MCP server definitions and auth state are intentionally not stored in this repo; configure them through `.mcp.json`, `~/.config/mcp/mcp.json`, `<Pi agent dir>/mcp.json`, or `.pi/mcp.json`.
 
 ## Shared fallback seed
 
@@ -83,7 +99,7 @@ Example filtered install in settings:
 
 ```json
 {
-  "source": "git:github.com/eiei114/pi-agent-bundles@v0.1.0",
+  "source": "git:github.com/eiei114/pi-agent-bundles@v0.6.0",
   "extensions": [
     "+node_modules/pi-model-fallback/extensions/index.ts",
     "+shared/extensions/seed-model-fallback.ts",

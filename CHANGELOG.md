@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+## 0.6.0
+
+- Add dedicated generic iOS agent bundle slices for Cursor Builder, Codex 5.4 Builder, Codex 5.5 Fixer, and Codex 5.5 Planner.
+- Bundle `pi-mcp-adapter` so iOS agents can use MCP servers such as `xcodebuildmcp` through Pi's token-efficient MCP proxy.
+- Document iOS filtered install examples and MCP config boundaries.
 - Add Buy Me a Coffee sponsor button to README and native GitHub funding link via `.github/FUNDING.yml`.
 
 ## 0.5.0

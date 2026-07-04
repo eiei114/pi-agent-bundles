@@ -49,3 +49,13 @@ Prefer filtered Git installs so each agent loads only its own bundle:
 - [ ] Existing config files are never overwritten.
 - [ ] `npm run ci` passes.
 - [ ] README or docs show filtered install if new resources are added.
+
+## MCP-capable bundles
+
+When a bundle needs MCP-backed workflows, load `pi-mcp-adapter` through the package filter and keep MCP server config outside this repo. Recommended extension include:
+
+```json
+"+node_modules/pi-mcp-adapter/index.ts"
+```
+
+Do not commit `.mcp.json` files containing secrets, OAuth state, Apple credentials, signing assets, or machine-specific auth tokens.

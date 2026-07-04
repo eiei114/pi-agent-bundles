@@ -11,10 +11,19 @@ const requiredExtensions = [
   "./node_modules/pi-fff/index.ts",
   "./node_modules/pi-fff-non-ascii-guard/extensions",
   "./node_modules/pi-smart-fetch/dist/index.js",
+  "./node_modules/pi-mcp-adapter/index.ts",
   "./node_modules/pi-multica-spine/extensions",
   "./node_modules/context-mode/build/adapters/pi/extension.js",
   "./node_modules/@howaboua/pi-codex-conversion/src/index.ts",
   "./node_modules/@offbynan/pi-cursor-provider/index.ts",
+];
+
+
+const iosBundleSlugs = [
+  "ios-cursor-builder",
+  "ios-codex54-builder",
+  "ios-codex55-fixer",
+  "ios-codex55-planner",
 ];
 
 const bundledPackages = [
@@ -23,6 +32,7 @@ const bundledPackages = [
   "context-mode",
   "pi-fff",
   "pi-fff-non-ascii-guard",
+  "pi-mcp-adapter",
   "pi-multica-spine",
   "pi-smart-fetch",
 ];
@@ -52,4 +62,14 @@ test("context-mode tools enabled without auto-loading context-mode skill", () =>
   assert.ok(packageJson.pi.extensions.includes("./node_modules/context-mode/build/adapters/pi/extension.js"));
   assert.ok(packageJson.pi.extensions.includes("./shared/post-context-mode/extensions"));
   assert.ok(!packageJson.pi.skills.includes("./node_modules/context-mode/skills"));
+});
+
+test("package includes dedicated generic iOS agent bundles", async () => {
+  for (const slug of iosBundleSlugs) {
+    const readme = await readFile(new URL(`../bundles/${slug}/README.md`, import.meta.url), "utf8");
+    const status = await readFile(new URL(`../bundles/${slug}/extensions/status.ts`, import.meta.url), "utf8");
+    assert.match(readme, new RegExp(`Bundle slug: \`${slug}\``));
+    assert.match(readme, /pi-mcp-adapter/);
+    assert.match(status, new RegExp(`${slug}:bundle-status`));
+  }
 });
