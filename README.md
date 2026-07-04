@@ -9,13 +9,13 @@ This repo is intentionally Git-only. It is not meant to be published to npm. Ins
 ## Install
 
 ```bash
-pi install git:github.com/eiei114/pi-agent-bundles@v0.6.2
+pi install git:github.com/eiei114/pi-agent-bundles@v0.6.3
 ```
 
 For project-local install:
 
 ```bash
-pi install git:github.com/eiei114/pi-agent-bundles@v0.6.2 -l
+pi install git:github.com/eiei114/pi-agent-bundles@v0.6.3 -l
 ```
 
 ## Bundled existing extensions
@@ -35,7 +35,7 @@ pi install git:github.com/eiei114/pi-agent-bundles@v0.6.2 -l
 Agents can use one custom arg pair:
 
 ```txt
---no-extensions -e git:github.com/eiei114/pi-agent-bundles@v0.6.2
+--no-extensions -e git:github.com/eiei114/pi-agent-bundles@v0.6.3
 ```
 
 ## Included bundles
@@ -99,7 +99,7 @@ Example filtered install in settings:
 
 ```json
 {
-  "source": "git:github.com/eiei114/pi-agent-bundles@v0.6.2",
+  "source": "git:github.com/eiei114/pi-agent-bundles@v0.6.3",
   "extensions": [
     "+node_modules/pi-model-fallback/extensions/index.ts",
     "+shared/extensions/seed-model-fallback.ts",

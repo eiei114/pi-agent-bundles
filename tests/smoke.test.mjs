@@ -26,6 +26,26 @@ const iosBundleSlugs = [
   "ios-codex55-planner",
 ];
 
+
+const iosExtensionProfiles = {
+  "ios-cursor-builder": {
+    includes: ["pi-mcp-adapter", "context-mode", "@offbynan/pi-cursor-provider"],
+    excludes: ["pi-smart-fetch", "@howaboua/pi-codex-conversion"],
+  },
+  "ios-codex54-builder": {
+    includes: ["pi-mcp-adapter", "context-mode", "@howaboua/pi-codex-conversion"],
+    excludes: ["pi-smart-fetch", "@offbynan/pi-cursor-provider"],
+  },
+  "ios-codex55-fixer": {
+    includes: ["pi-smart-fetch", "pi-mcp-adapter", "context-mode", "@howaboua/pi-codex-conversion"],
+    excludes: ["@offbynan/pi-cursor-provider"],
+  },
+  "ios-codex55-planner": {
+    includes: ["pi-smart-fetch", "@howaboua/pi-codex-conversion"],
+    excludes: ["pi-mcp-adapter", "context-mode", "pi-fff", "@offbynan/pi-cursor-provider"],
+  },
+};
+
 const bundledPackages = [
   "@howaboua/pi-codex-conversion",
   "@offbynan/pi-cursor-provider",
@@ -70,9 +90,18 @@ test("package includes dedicated generic iOS agent bundles", async () => {
     const status = await readFile(new URL(`../bundles/${slug}/extensions/status.ts`, import.meta.url), "utf8");
     const mcp = JSON.parse(await readFile(new URL(`../bundles/${slug}/mcp.json`, import.meta.url), "utf8"));
     assert.match(readme, new RegExp(String.raw`Bundle slug: \`${slug}\``));
-    assert.match(readme, /pi-mcp-adapter/);
     assert.match(readme, new RegExp(String.raw`--mcp-config .*${slug}/mcp\.json`));
     assert.match(status, new RegExp(`${slug}:bundle-status`));
+    const extensionStart = readme.indexOf('  "extensions": [');
+    const skillsStart = readme.indexOf('  "skills": [', extensionStart);
+    const extensionBlock = readme.slice(extensionStart, skillsStart);
+    const profile = iosExtensionProfiles[slug];
+    for (const needle of profile.includes) {
+      assert.ok(extensionBlock.includes(needle), `${slug} should include ${needle}`);
+    }
+    for (const needle of profile.excludes) {
+      assert.ok(!extensionBlock.includes(needle), `${slug} should not include ${needle}`);
+    }
     assert.equal(mcp.mcpServers.xcodebuildmcp.command, "npx");
     assert.deepEqual(mcp.mcpServers.xcodebuildmcp.args, ["-y", "xcodebuildmcp@2.6.2", "mcp"]);
     assert.equal(mcp.mcpServers.xcodebuildmcp.lifecycle, "lazy");

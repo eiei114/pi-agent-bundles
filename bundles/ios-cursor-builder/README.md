@@ -34,13 +34,12 @@ The file includes a lazy `xcodebuildmcp` server by default (`npx -y xcodebuildmc
 
 ```json
 {
-  "source": "git:github.com/eiei114/pi-agent-bundles@v0.6.2",
+  "source": "git:github.com/eiei114/pi-agent-bundles@v0.6.3",
   "extensions": [
     "+node_modules/pi-model-fallback/extensions/index.ts",
     "+shared/extensions/seed-model-fallback.ts",
     "+node_modules/pi-fff/index.ts",
     "+node_modules/pi-fff-non-ascii-guard/extensions",
-    "+node_modules/pi-smart-fetch/dist/index.js",
     "+node_modules/pi-mcp-adapter/index.ts",
     "+node_modules/pi-multica-spine/extensions",
     "+node_modules/context-mode/build/adapters/pi/extension.js",
@@ -53,6 +52,8 @@ The file includes a lazy `xcodebuildmcp` server by default (`npx -y xcodebuildmc
   ]
 }
 ```
+
+Extension profile: Cursor provider, file search, simulator/MCP, and context-mode for UI evidence/logs. No smart-fetch by default.
 
 ## Rules
 

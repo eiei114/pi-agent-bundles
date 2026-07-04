@@ -34,7 +34,7 @@ The file includes a lazy `xcodebuildmcp` server by default (`npx -y xcodebuildmc
 
 ```json
 {
-  "source": "git:github.com/eiei114/pi-agent-bundles@v0.6.2",
+  "source": "git:github.com/eiei114/pi-agent-bundles@v0.6.3",
   "extensions": [
     "+node_modules/pi-model-fallback/extensions/index.ts",
     "+shared/extensions/seed-model-fallback.ts",
@@ -53,6 +53,8 @@ The file includes a lazy `xcodebuildmcp` server by default (`npx -y xcodebuildmc
   ]
 }
 ```
+
+Extension profile: Fixer gets docs fetch plus file search, MCP, and context-mode for troubleshooting logs.
 
 ## Rules
 

@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+## 0.6.3
+
+- Narrow iOS bundle filtered install examples so each agent loads only role-relevant Pi extensions.
+- Keep MCP/context-mode off the iOS planner default profile while preserving xcodebuild MCP for builder/fixer roles.
+
 ## 0.6.2
 
 - Configure each generic iOS bundle's per-agent `mcp.json` with a lazy `xcodebuildmcp` server using `npx -y xcodebuildmcp@2.6.2 mcp`.

@@ -34,17 +34,12 @@ The file includes a lazy `xcodebuildmcp` server by default (`npx -y xcodebuildmc
 
 ```json
 {
-  "source": "git:github.com/eiei114/pi-agent-bundles@v0.6.2",
+  "source": "git:github.com/eiei114/pi-agent-bundles@v0.6.3",
   "extensions": [
     "+node_modules/pi-model-fallback/extensions/index.ts",
     "+shared/extensions/seed-model-fallback.ts",
-    "+node_modules/pi-fff/index.ts",
-    "+node_modules/pi-fff-non-ascii-guard/extensions",
     "+node_modules/pi-smart-fetch/dist/index.js",
-    "+node_modules/pi-mcp-adapter/index.ts",
     "+node_modules/pi-multica-spine/extensions",
-    "+node_modules/context-mode/build/adapters/pi/extension.js",
-    "+shared/post-context-mode/extensions",
     "+node_modules/@howaboua/pi-codex-conversion/src/index.ts",
     "+bundles/ios-codex55-planner/extensions/*.ts"
   ],
@@ -53,6 +48,8 @@ The file includes a lazy `xcodebuildmcp` server by default (`npx -y xcodebuildmc
   ]
 }
 ```
+
+Extension profile: Planner keeps only fallback, docs fetch, Multica context, Codex provider, and planner status. No fff/context-mode/MCP by default.
 
 ## Rules
 
