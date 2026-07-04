@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Add Buy Me a Coffee sponsor button to README and native GitHub funding link via `.github/FUNDING.yml`.
+
 ## 0.5.0
 
 - Keep context-mode tools enabled but stop auto-loading the context-mode skill for Multica work-agent runs.
@@ -31,3 +35,4 @@
 - Bundle `pi-model-fallback` through npm dependency.
 - Seed default Multica fallback config: `zai/*` 429/5xx -> `deepseek/deepseek-v4-flash`.
 - Add `/multica-bundle:status`.
+
