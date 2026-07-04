@@ -98,7 +98,7 @@ test("package includes dedicated generic iOS agent bundles", async () => {
     const status = await readFile(new URL(`../bundles/${slug}/extensions/status.ts`, import.meta.url), "utf8");
     const mcp = JSON.parse(await readFile(new URL(`../bundles/${slug}/mcp.json`, import.meta.url), "utf8"));
     assert.match(readme, new RegExp(String.raw`Bundle slug: \`${slug}\``));
-    assert.match(readme, new RegExp(String.raw`-e git:github.com/eiei114/pi-agent-bundles@v0.6.4`));
+    assert.match(readme, new RegExp(String.raw`-e git:github.com/eiei114/pi-agent-bundles@v0.6.5`));
     assert.match(readme, new RegExp(String.raw`--agent-bundle ${slug}`));
     assert.ok(!readme.includes("-e C:/"));
     assert.match(status, new RegExp(`${slug}:bundle-status`));

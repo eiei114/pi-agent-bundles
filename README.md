@@ -9,13 +9,13 @@ This repo is intentionally Git-only. It is not meant to be published to npm. Ins
 ## Install
 
 ```bash
-pi install git:github.com/eiei114/pi-agent-bundles@v0.6.4
+pi install git:github.com/eiei114/pi-agent-bundles@v0.6.5
 ```
 
 For project-local install:
 
 ```bash
-pi install git:github.com/eiei114/pi-agent-bundles@v0.6.4 -l
+pi install git:github.com/eiei114/pi-agent-bundles@v0.6.5 -l
 ```
 
 ## Bundled existing extensions
@@ -32,11 +32,10 @@ pi install git:github.com/eiei114/pi-agent-bundles@v0.6.4 -l
 - `@offbynan/pi-cursor-provider`
 - `pi-mcp-adapter`
 
-Agents should use the Git package plus a bundle selector. This keeps Multica config portable across runtimes and avoids machine-local `C:/...` paths:
+Agents should use the Git package plus a bundle selector. This keeps Multica config portable across runtimes and avoids machine-local `C:/...` paths. Do not add `--no-extensions` here; Pi skips Git package extension loading when that flag is present:
 
 ```txt
---no-extensions
--e git:github.com/eiei114/pi-agent-bundles@v0.6.4
+-e git:github.com/eiei114/pi-agent-bundles@v0.6.5
 --agent-bundle <bundle-slug>
 ```
 

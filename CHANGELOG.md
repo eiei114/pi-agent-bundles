@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## 0.6.5
+
+- Document and validate Git package runtime usage without `--no-extensions`, because Pi disables Git package extension loading when `--no-extensions` is present.
+
 ## 0.6.4
 
 - Update bundled runtime extension dependencies to their latest published versions.
