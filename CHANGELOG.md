@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## 0.6.7
+
+- Restore non-iOS role bundle loader entries and index profiles for Cursor, Codex, Pi GLM, Pi Ace, orchestrator, scout, maintenance, and intake agents.
+- Load Cursor provider through the selected Cursor Composer/Patch bundles so `cursor/composer-2.5` agents can start with the Git-package `--agent-bundle` args.
+- Update non-iOS bundle READMEs to use the same installed Git checkout custom-args shape as the working iOS agents.
+
 ## 0.6.6
 
 - Restore `--no-extensions` in recommended Multica args while avoiding machine-local paths by loading the installed Git package checkout under `~/.pi/agent/git/...`.

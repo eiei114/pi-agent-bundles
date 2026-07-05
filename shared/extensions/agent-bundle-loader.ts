@@ -1,10 +1,34 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
+import cursorComposerBuilder from "../../bundles/cursor-composer-builder/extensions/index.ts";
+import cursorPatchRunner from "../../bundles/cursor-patch-runner/extensions/index.ts";
+import codexReleaseEngineer from "../../bundles/codex-release-engineer/extensions/index.ts";
+import piGlmBuilder from "../../bundles/pi-glm-builder/extensions/index.ts";
+import piAce from "../../bundles/pi-ace/extensions/index.ts";
+import piAceBalanced from "../../bundles/pi-ace-balanced/extensions/index.ts";
+import piAceAir from "../../bundles/pi-ace-air/extensions/index.ts";
+import piAceTurbo from "../../bundles/pi-ace-turbo/extensions/index.ts";
+import piOssOrchestrator from "../../bundles/pi-oss-orchestrator/extensions/index.ts";
+import piExtensionResearchScout from "../../bundles/pi-extension-research-scout/extensions/index.ts";
+import multicaIntakeAgent from "../../bundles/multica-intake-agent/extensions/index.ts";
+import multicaMaintenance from "../../bundles/multica-maintenance/extensions/index.ts";
 import iosCursorBuilder from "../../bundles/ios-cursor-builder/extensions/index.ts";
 import iosCodex54Builder from "../../bundles/ios-codex54-builder/extensions/index.ts";
 import iosCodex55Fixer from "../../bundles/ios-codex55-fixer/extensions/index.ts";
 import iosCodex55Planner from "../../bundles/ios-codex55-planner/extensions/index.ts";
 
 const bundleLoaders = {
+  "cursor-composer-builder": cursorComposerBuilder,
+  "cursor-patch-runner": cursorPatchRunner,
+  "codex-release-engineer": codexReleaseEngineer,
+  "pi-glm-builder": piGlmBuilder,
+  "pi-ace": piAce,
+  "pi-ace-balanced": piAceBalanced,
+  "pi-ace-air": piAceAir,
+  "pi-ace-turbo": piAceTurbo,
+  "pi-oss-orchestrator": piOssOrchestrator,
+  "pi-extension-research-scout": piExtensionResearchScout,
+  "multica-intake-agent": multicaIntakeAgent,
+  "multica-maintenance": multicaMaintenance,
   "ios-cursor-builder": iosCursorBuilder,
   "ios-codex54-builder": iosCodex54Builder,
   "ios-codex55-fixer": iosCodex55Fixer,

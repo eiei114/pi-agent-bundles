@@ -11,20 +11,14 @@ Implementation fallback builder role, normally GLM-backed with model fallback av
 - `extensions/status.ts` — registers `/pi-glm-builder:bundle-status` for load verification.
 - `skills/` — reserved for future agent-specific skills.
 
-## Recommended filtered install
+## Recommended Multica custom args
 
-```json
-{
-  "source": "git:github.com/eiei114/pi-agent-bundles@v0.4.0",
-  "extensions": [
-    "+node_modules/pi-model-fallback/extensions/index.ts",
-    "+shared/extensions/seed-model-fallback.ts",
-    "+bundles/pi-glm-builder/extensions/*.ts"
-  ],
-  "skills": [
-    "+bundles/pi-glm-builder/skills/*/SKILL.md"
-  ]
-}
+Use the installed Git package checkout, matching the iOS agent bundle pattern:
+
+```txt
+--no-extensions
+-e ~/.pi/agent/git/github.com/eiei114/pi-agent-bundles/shared/extensions/agent-bundle-loader.ts
+--agent-bundle pi-glm-builder
 ```
 
 ## Rules

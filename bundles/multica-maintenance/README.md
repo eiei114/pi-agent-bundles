@@ -11,18 +11,18 @@ Shared Multica maintenance runtime defaults used by controller/sentinel agents.
 - `extensions/status.ts` — registers `/multica-maintenance:bundle-status` for load verification.
 - `skills/` — reserved for future maintenance-specific skills.
 
-## Recommended filtered install
+## Recommended Multica custom args
 
-```json
-{
-  "source": "git:github.com/eiei114/pi-agent-bundles@v0.4.0",
-  "extensions": [
-    "+node_modules/pi-model-fallback/extensions/index.ts",
-    "+shared/extensions/seed-model-fallback.ts",
-    "+bundles/multica-maintenance/extensions/*.ts"
-  ],
-  "skills": [
-    "+bundles/multica-maintenance/skills/*/SKILL.md"
-  ]
-}
+Use the installed Git package checkout, matching the iOS agent bundle pattern:
+
+```txt
+--no-extensions
+-e ~/.pi/agent/git/github.com/eiei114/pi-agent-bundles/shared/extensions/agent-bundle-loader.ts
+--agent-bundle multica-maintenance
 ```
+
+## Rules
+
+- Do not store secrets in this bundle.
+- Seed config only when missing; never overwrite human-edited config.
+- Keep command names prefixed with `multica-maintenance` to avoid global command collisions.

@@ -23,6 +23,21 @@ const forbiddenGlobalExtensions = [
 ];
 
 
+const genericBundleSlugs = [
+  "cursor-composer-builder",
+  "cursor-patch-runner",
+  "codex-release-engineer",
+  "pi-glm-builder",
+  "pi-ace",
+  "pi-ace-balanced",
+  "pi-ace-air",
+  "pi-ace-turbo",
+  "pi-oss-orchestrator",
+  "pi-extension-research-scout",
+  "multica-intake-agent",
+  "multica-maintenance",
+];
+
 const iosBundleSlugs = [
   "ios-cursor-builder",
   "ios-codex54-builder",
@@ -30,6 +45,26 @@ const iosBundleSlugs = [
   "ios-codex55-planner",
 ];
 
+const allBundleSlugs = [...genericBundleSlugs, ...iosBundleSlugs];
+
+const genericExtensionProfiles = {
+  "cursor-composer-builder": {
+    includes: ["pi-mcp-adapter", "context-mode", "@offbynan/pi-cursor-provider"],
+    excludes: ["@howaboua/pi-codex-conversion"],
+  },
+  "cursor-patch-runner": {
+    includes: ["pi-mcp-adapter", "context-mode", "@offbynan/pi-cursor-provider"],
+    excludes: ["@howaboua/pi-codex-conversion"],
+  },
+  "codex-release-engineer": {
+    includes: ["pi-mcp-adapter", "context-mode", "@howaboua/pi-codex-conversion"],
+    excludes: ["@offbynan/pi-cursor-provider"],
+  },
+  "pi-glm-builder": {
+    includes: ["pi-fff", "context-mode", "pi-multica-spine"],
+    excludes: ["@offbynan/pi-cursor-provider", "@howaboua/pi-codex-conversion"],
+  },
+};
 
 const iosExtensionProfiles = {
   "ios-cursor-builder": {
@@ -92,6 +127,39 @@ test("context-mode is loaded only through selected role bundles", async () => {
   assert.ok(!packageJson.pi.skills.includes("./node_modules/context-mode/skills"));
 });
 
+
+
+test("package includes non-iOS Multica agent bundle loader profiles", async () => {
+  const loader = await readFile(new URL("../shared/extensions/agent-bundle-loader.ts", import.meta.url), "utf8");
+
+  for (const slug of genericBundleSlugs) {
+    const readme = await readFile(new URL(`../bundles/${slug}/README.md`, import.meta.url), "utf8");
+    const status = await readFile(new URL(`../bundles/${slug}/extensions/status.ts`, import.meta.url), "utf8");
+    const index = await readFile(new URL(`../bundles/${slug}/extensions/index.ts`, import.meta.url), "utf8");
+
+    assert.match(readme, new RegExp(String.raw`Bundle slug: \`${slug}\``));
+    assert.match(readme, new RegExp(String.raw`--no-extensions`));
+    assert.match(readme, new RegExp(String.raw`-e ~/.pi/agent/git/github.com/eiei114/pi-agent-bundles/shared/extensions/agent-bundle-loader.ts`));
+    assert.match(readme, new RegExp(String.raw`--agent-bundle ${slug}`));
+    assert.ok(!readme.includes("-e C:/"));
+    assert.ok(!readme.includes("-e git:"));
+    assert.match(status, new RegExp(`${slug}:bundle-status`));
+    assert.ok(index.includes("pi-model-fallback"), `${slug} should include model fallback`);
+    assert.ok(index.includes("seed-model-fallback"), `${slug} should seed fallback config`);
+    assert.ok(index.includes("pi-multica-spine"), `${slug} should include Multica spine`);
+    assert.ok(loader.includes(`"${slug}"`), `${slug} should be registered in the bundle loader`);
+
+    const profile = genericExtensionProfiles[slug];
+    if (!profile) continue;
+    for (const needle of profile.includes) {
+      assert.ok(index.includes(needle), `${slug} should include ${needle}`);
+    }
+    for (const needle of profile.excludes) {
+      assert.ok(!index.includes(needle), `${slug} should not include ${needle}`);
+    }
+  }
+});
+
 test("package includes dedicated generic iOS agent bundles", async () => {
   for (const slug of iosBundleSlugs) {
     const readme = await readFile(new URL(`../bundles/${slug}/README.md`, import.meta.url), "utf8");
@@ -104,6 +172,8 @@ test("package includes dedicated generic iOS agent bundles", async () => {
     assert.ok(!readme.includes("-e C:/"));
     assert.ok(!readme.includes("-e git:"));
     assert.match(status, new RegExp(`${slug}:bundle-status`));
+    const loader = await readFile(new URL("../shared/extensions/agent-bundle-loader.ts", import.meta.url), "utf8");
+    assert.ok(loader.includes(`"${slug}"`), `${slug} should be registered in the bundle loader`);
     const index = await readFile(new URL(`../bundles/${slug}/extensions/index.ts`, import.meta.url), "utf8");
     const profile = iosExtensionProfiles[slug];
     for (const needle of profile.includes) {

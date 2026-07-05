@@ -11,20 +11,14 @@ Fast queue control role such as Todo Runner and Backlog Promoter.
 - `extensions/status.ts` — registers `/pi-ace-turbo:bundle-status` for load verification.
 - `skills/` — reserved for future agent-specific skills.
 
-## Recommended filtered install
+## Recommended Multica custom args
 
-```json
-{
-  "source": "git:github.com/eiei114/pi-agent-bundles@v0.4.0",
-  "extensions": [
-    "+node_modules/pi-model-fallback/extensions/index.ts",
-    "+shared/extensions/seed-model-fallback.ts",
-    "+bundles/pi-ace-turbo/extensions/*.ts"
-  ],
-  "skills": [
-    "+bundles/pi-ace-turbo/skills/*/SKILL.md"
-  ]
-}
+Use the installed Git package checkout, matching the iOS agent bundle pattern:
+
+```txt
+--no-extensions
+-e ~/.pi/agent/git/github.com/eiei114/pi-agent-bundles/shared/extensions/agent-bundle-loader.ts
+--agent-bundle pi-ace-turbo
 ```
 
 ## Rules
