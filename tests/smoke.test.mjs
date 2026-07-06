@@ -32,8 +32,11 @@ const genericBundleSlugs = [
   "pi-ace-balanced",
   "pi-ace-air",
   "pi-ace-turbo",
+  "pi-spark-router",
+  "pi-spark-scout",
   "pi-oss-orchestrator",
   "pi-extension-research-scout",
+  "codex-spark-patch-runner",
   "multica-intake-agent",
   "multica-maintenance",
 ];
@@ -62,6 +65,18 @@ const genericExtensionProfiles = {
   },
   "pi-glm-builder": {
     includes: ["pi-fff", "context-mode", "pi-multica-spine"],
+    excludes: ["@offbynan/pi-cursor-provider", "@howaboua/pi-codex-conversion"],
+  },
+  "pi-spark-router": {
+    includes: ["pi-fff", "context-mode", "pi-multica-spine"],
+    excludes: ["pi-smart-fetch", "@offbynan/pi-cursor-provider", "@howaboua/pi-codex-conversion"],
+  },
+  "pi-spark-scout": {
+    includes: ["pi-fff", "pi-smart-fetch", "context-mode", "pi-multica-spine"],
+    excludes: ["@offbynan/pi-cursor-provider", "@howaboua/pi-codex-conversion"],
+  },
+  "codex-spark-patch-runner": {
+    includes: ["pi-fff", "pi-mcp-adapter", "context-mode", "pi-multica-spine"],
     excludes: ["@offbynan/pi-cursor-provider", "@howaboua/pi-codex-conversion"],
   },
 };

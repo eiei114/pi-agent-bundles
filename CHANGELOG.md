@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## 0.6.8
+
+- Add Spark spillover bundles for Multica GLM quota distribution: `pi-spark-router`, `pi-spark-scout`, and `codex-spark-patch-runner`.
+- Register the new bundles in the shared loader so live Multica agents can use portable Git-package custom args.
+- Document the Spark bundles in the README install and bundle lists.
+
 ## 0.6.7
 
 - Restore non-iOS role bundle loader entries and index profiles for Cursor, Codex, Pi GLM, Pi Ace, orchestrator, scout, maintenance, and intake agents.
