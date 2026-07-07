@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+## 0.6.8
+
+- Bump bundled `pi-multica-spine` to `^0.1.4` for local import closure verification in Work Agent completion checks.
+- Depends on `pi-multica-spine@0.1.4` from https://github.com/eiei114/pi-multica-spine/pull/15
+
 ## 0.6.7
 
 - Restore non-iOS role bundle loader entries and index profiles for Cursor, Codex, Pi GLM, Pi Ace, orchestrator, scout, maintenance, and intake agents.
