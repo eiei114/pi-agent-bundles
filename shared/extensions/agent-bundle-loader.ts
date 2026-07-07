@@ -7,8 +7,11 @@ import piAce from "../../bundles/pi-ace/extensions/index.ts";
 import piAceBalanced from "../../bundles/pi-ace-balanced/extensions/index.ts";
 import piAceAir from "../../bundles/pi-ace-air/extensions/index.ts";
 import piAceTurbo from "../../bundles/pi-ace-turbo/extensions/index.ts";
+import piSparkRouter from "../../bundles/pi-spark-router/extensions/index.ts";
+import piSparkScout from "../../bundles/pi-spark-scout/extensions/index.ts";
 import piOssOrchestrator from "../../bundles/pi-oss-orchestrator/extensions/index.ts";
 import piExtensionResearchScout from "../../bundles/pi-extension-research-scout/extensions/index.ts";
+import codexSparkPatchRunner from "../../bundles/codex-spark-patch-runner/extensions/index.ts";
 import multicaIntakeAgent from "../../bundles/multica-intake-agent/extensions/index.ts";
 import multicaMaintenance from "../../bundles/multica-maintenance/extensions/index.ts";
 import iosCursorBuilder from "../../bundles/ios-cursor-builder/extensions/index.ts";
@@ -25,8 +28,11 @@ const bundleLoaders = {
   "pi-ace-balanced": piAceBalanced,
   "pi-ace-air": piAceAir,
   "pi-ace-turbo": piAceTurbo,
+  "pi-spark-router": piSparkRouter,
+  "pi-spark-scout": piSparkScout,
   "pi-oss-orchestrator": piOssOrchestrator,
   "pi-extension-research-scout": piExtensionResearchScout,
+  "codex-spark-patch-runner": codexSparkPatchRunner,
   "multica-intake-agent": multicaIntakeAgent,
   "multica-maintenance": multicaMaintenance,
   "ios-cursor-builder": iosCursorBuilder,

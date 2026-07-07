@@ -2,10 +2,15 @@
 
 ## Unreleased
 
-## 0.6.8
+## 0.6.9
 
 - Bump bundled `pi-multica-spine` to `^0.1.4` for local import closure verification in Work Agent completion checks.
-- Depends on `pi-multica-spine@0.1.4` from https://github.com/eiei114/pi-multica-spine/pull/15
+
+## 0.6.8
+
+- Add Spark spillover bundles for Multica GLM quota distribution: `pi-spark-router`, `pi-spark-scout`, and `codex-spark-patch-runner`.
+- Register the new bundles in the shared loader so live Multica agents can use portable Git-package custom args.
+- Document the Spark bundles in the README install and bundle lists.
 
 ## 0.6.7
 
@@ -61,7 +66,7 @@
 
 ## 0.3.0
 
-- Use `pi-model-fallback` from Git tag `v0.2.0` to enable persistent failover state without requiring an npm publish.
+- Use `pi-model-fallback` Git tag `v0.2.0` to enable persistent failover state without requiring an npm publish.
 - Future sessions preselect DeepSeek fallback after a matching ZAI 429/5xx failure until cooldown expiry.
 
 ## 0.2.0
@@ -80,4 +85,3 @@
 - Bundle `pi-model-fallback` through npm dependency.
 - Seed default Multica fallback config: `zai/*` 429/5xx -> `deepseek/deepseek-v4-flash`.
 - Add `/multica-bundle:status`.
-

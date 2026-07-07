@@ -9,13 +9,13 @@ This repo is intentionally Git-only. It is not meant to be published to npm. Ins
 ## Install
 
 ```bash
-pi install git:github.com/eiei114/pi-agent-bundles@v0.6.6
+pi install git:github.com/eiei114/pi-agent-bundles@v0.6.8
 ```
 
 For project-local install:
 
 ```bash
-pi install git:github.com/eiei114/pi-agent-bundles@v0.6.6 -l
+pi install git:github.com/eiei114/pi-agent-bundles@v0.6.8 -l
 ```
 
 ## Bundled existing extensions
@@ -49,11 +49,14 @@ Each bundle has its own `bundles/<slug>/README.md` and unique `/<slug>:bundle-st
 - `pi-ace-balanced`
 - `pi-ace-air`
 - `pi-ace-turbo`
+- `pi-spark-router`
+- `pi-spark-scout`
 - `pi-oss-orchestrator`
 - `pi-extension-research-scout`
 - `pi-glm-builder`
 - `cursor-composer-builder`
 - `cursor-patch-runner`
+- `codex-spark-patch-runner`
 - `codex-release-engineer`
 - `multica-intake-agent`
 - `ios-cursor-builder`
