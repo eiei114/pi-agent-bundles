@@ -1,6 +1,6 @@
 {
   "name": "pi-agent-bundles",
-  "version": "0.6.8",
+  "version": "0.6.9",
   "private": true,
   "description": "Git-distributed Pi agent bundles for Multica and project-specific runtime defaults.",
   "type": "module",
@@ -49,7 +49,7 @@
     "pi-fff-non-ascii-guard": "^0.1.9",
     "pi-mcp-adapter": "^2.11.0",
     "pi-model-fallback": "^0.3.3",
-    "pi-multica-spine": "^0.1.3",
+    "pi-multica-spine": "^0.1.4",
     "pi-smart-fetch": "^0.3.12"
   },
   "bundledDependencies": [
@@ -75,5 +75,15 @@
     "@types/node": "^26.0.0",
     "typebox": "latest",
     "typescript": "^6.0.3"
-  }
+  },
+  "bundleDependencies": [
+    "@howaboua/pi-codex-conversion",
+    "@offbynan/pi-cursor-provider",
+    "context-mode",
+    "pi-fff",
+    "pi-fff-non-ascii-guard",
+    "pi-mcp-adapter",
+    "pi-multica-spine",
+    "pi-smart-fetch"
+  ]
 }
