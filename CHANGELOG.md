@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## 0.7.0
+
+- Add bundle auto-sync to the newest `v*` release tag before loading a role bundle.
+- Document `@latest` install refs and sync env vars (`PI_AGENT_BUNDLES_SYNC`, `PI_AGENT_BUNDLES_SYNC_MINUTES`, `PI_AGENT_BUNDLES_NPM_MINUTES`).
+- Keep Multica bundle startup on tagged releases instead of tracking `main` directly.
+
 ## 0.6.9
 
 - Bump bundled `pi-multica-spine` to `^0.1.4` for local import closure verification in Work Agent completion checks.

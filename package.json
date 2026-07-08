@@ -1,6 +1,6 @@
 {
   "name": "pi-agent-bundles",
-  "version": "0.6.9",
+  "version": "0.7.0",
   "private": true,
   "description": "Git-distributed Pi agent bundles for Multica and project-specific runtime defaults.",
   "type": "module",

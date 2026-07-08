@@ -1,4 +1,5 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
+import { syncBundleGitCheckout } from "./bundle-git-sync.ts";
 import cursorComposerBuilder from "../../bundles/cursor-composer-builder/extensions/index.ts";
 import cursorPatchRunner from "../../bundles/cursor-patch-runner/extensions/index.ts";
 import codexReleaseEngineer from "../../bundles/codex-release-engineer/extensions/index.ts";
@@ -51,6 +52,13 @@ export default async function agentBundleLoader(pi: ExtensionAPI) {
 
   const slug = getBundleSlug();
   if (!slug) return;
+
+  const sync = syncBundleGitCheckout();
+  if (sync.error) {
+    pi.logger?.warn?.(`pi-agent-bundles auto-sync warning: ${sync.error}`);
+  } else if (sync.updated) {
+    pi.logger?.info?.(`pi-agent-bundles updated to ${sync.commit ?? "latest tag"}`);
+  }
 
   const load = bundleLoaders[slug];
   if (!load) {

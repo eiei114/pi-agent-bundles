@@ -9,14 +9,24 @@ This repo is intentionally Git-only. It is not meant to be published to npm. Ins
 ## Install
 
 ```bash
-pi install git:github.com/eiei114/pi-agent-bundles@v0.6.8
+pi install git:github.com/eiei114/pi-agent-bundles@latest
 ```
 
 For project-local install:
 
 ```bash
-pi install git:github.com/eiei114/pi-agent-bundles@v0.6.8 -l
+pi install git:github.com/eiei114/pi-agent-bundles@latest -l
 ```
+
+## Auto-sync latest release tag
+
+`agent-bundle-loader` now resolves the newest `v*` release tag and checks out that tag before loading a bundle.
+
+- Default: sync at most once every 30 minutes (`PI_AGENT_BUNDLES_SYNC_MINUTES`)
+- Disable: `PI_AGENT_BUNDLES_SYNC=0`
+- Force every run: `PI_AGENT_BUNDLES_SYNC=always`
+- If `package-lock.json` changes after sync, `npm install` may run at most once every 6 hours (`PI_AGENT_BUNDLES_NPM_MINUTES`)
+- Local uncommitted changes in the checkout skip auto-sync instead of overwriting your work
 
 ## Bundled existing extensions
 

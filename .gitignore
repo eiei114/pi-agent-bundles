@@ -36,3 +36,5 @@ Thumbs.db
 *.log
 .tmp/
 tmp/
+# auto-sync state
+.bundle-git-sync.json
