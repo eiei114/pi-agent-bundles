@@ -142,6 +142,15 @@ test("context-mode is loaded only through selected role bundles", async () => {
   assert.ok(!packageJson.pi.skills.includes("./node_modules/context-mode/skills"));
 });
 
+test("README documents the runtime install prerequisite for explicit bundle loading", async () => {
+  const readme = await readFile(new URL("../README.md", import.meta.url), "utf8");
+  assert.match(readme, /pi install git:github\.com\/eiei114\/pi-agent-bundles\r?\n/);
+  assert.ok(!readme.includes("pi-agent-bundles@v0.6.8"));
+  assert.match(readme, /--no-extensions/);
+  assert.match(readme, /-e ~\/\.pi\/agent\/git\/github\.com\/eiei114\/pi-agent-bundles\/shared\/extensions\/agent-bundle-loader\.ts/);
+  assert.match(readme, /Extension path does not exist/);
+});
+
 
 
 test("package includes non-iOS Multica agent bundle loader profiles", async () => {

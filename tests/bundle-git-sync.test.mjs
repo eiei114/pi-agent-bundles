@@ -24,5 +24,5 @@ test("README documents auto-sync", () => {
   const source = readFileSync(join(repoRoot, "README.md"), "utf8");
   assert.match(source, /Auto-sync latest release tag/);
   assert.match(source, /PI_AGENT_BUNDLES_SYNC/);
-  assert.match(source, /@latest/);
+  assert.match(source, /pi install git:github\.com\/eiei114\/pi-agent-bundles\r?\n/);
 });

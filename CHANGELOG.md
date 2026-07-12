@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+## 0.7.1
+
+- Restore the unpinned `pi install git:github.com/eiei114/pi-agent-bundles` command as the canonical per-runtime setup and recovery path.
+- Document that `--no-extensions` remains compatible with explicit `-e` loading, while the installed Git checkout is a required runtime prerequisite.
+
 ## 0.7.0
 
 - Add bundle auto-sync to the newest `v*` release tag before loading a role bundle.

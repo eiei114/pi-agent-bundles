@@ -2,20 +2,20 @@
 
 Git-distributed Pi package bundles for agent runtimes.
 
-This repo is intentionally Git-only. It is not meant to be published to npm. Install pinned Git refs from each runtime that needs the bundle.
+This repo is intentionally Git-only. It is not meant to be published to npm. Install it on every runtime that needs a bundle.
 
 <a href="https://buymeacoffee.com/ekawano114m"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" width="217" height="60"></a>
 
 ## Install
 
 ```bash
-pi install git:github.com/eiei114/pi-agent-bundles@latest
+pi install git:github.com/eiei114/pi-agent-bundles
 ```
 
 For project-local install:
 
 ```bash
-pi install git:github.com/eiei114/pi-agent-bundles@latest -l
+pi install git:github.com/eiei114/pi-agent-bundles -l
 ```
 
 ## Auto-sync latest release tag
@@ -48,6 +48,19 @@ Install the Git package on each runtime, then point `-e` at Pi's documented Git 
 --no-extensions
 -e ~/.pi/agent/git/github.com/eiei114/pi-agent-bundles/shared/extensions/agent-bundle-loader.ts
 --agent-bundle <bundle-slug>
+```
+
+`--no-extensions` disables discovery but still permits explicit `-e` paths. The install step is therefore a runtime prerequisite: it creates the checkout consumed by `-e`. If a runtime reports `Extension path does not exist` or `Unknown option: --agent-bundle`, restore the checkout with the same install command:
+
+```bash
+pi install git:github.com/eiei114/pi-agent-bundles
+```
+
+Verify before enabling scheduled work:
+
+```bash
+pi list
+test -f ~/.pi/agent/git/github.com/eiei114/pi-agent-bundles/shared/extensions/agent-bundle-loader.ts
 ```
 
 ## Included bundles
