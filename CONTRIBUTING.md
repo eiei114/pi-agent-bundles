@@ -27,7 +27,7 @@ Before opening a PR:
 
 ## Release
 
-Releases use npm Trusted Publishing. Do not add `NPM_TOKEN` to GitHub Secrets.
+Releases use Git tags and GitHub Releases only. This private bundle repository is not published to npm; do not add `NPM_TOKEN` or npm Trusted Publishing configuration.
 
 ```bash
 npm version patch
