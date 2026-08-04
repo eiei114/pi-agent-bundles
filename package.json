@@ -48,7 +48,7 @@
     "pi-fff": "^0.1.12",
     "pi-fff-non-ascii-guard": "^0.1.10",
     "pi-mcp-adapter": "^2.11.0",
-    "pi-model-fallback": "^0.3.3",
+    "pi-model-fallback": "^0.3.4",
     "pi-multica-spine": "^0.1.4",
     "pi-smart-fetch": "^0.3.12"
   },
