@@ -43,7 +43,7 @@
   },
   "dependencies": {
     "@howaboua/pi-codex-conversion": "^2.1.6",
-    "@offbynan/pi-cursor-provider": "^0.5.3",
+    "@offbynan/pi-cursor-provider": "^0.6.0",
     "context-mode": "^1.0.169",
     "pi-fff": "^0.1.12",
     "pi-fff-non-ascii-guard": "^0.1.10",
