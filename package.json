@@ -50,7 +50,7 @@
     "pi-mcp-adapter": "^2.11.0",
     "pi-model-fallback": "^0.3.4",
     "pi-multica-spine": "^0.1.4",
-    "pi-smart-fetch": "^0.3.12"
+    "pi-smart-fetch": "^0.3.17"
   },
   "bundledDependencies": [
     "@howaboua/pi-codex-conversion",
