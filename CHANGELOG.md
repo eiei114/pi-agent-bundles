@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## 0.7.2
+
+### Changed
+
+- Merge the 2026-08-22 managed OSS dependency and maintenance PR batch.
+
 ## 0.7.1
 
 - Restore the unpinned `pi install git:github.com/eiei114/pi-agent-bundles` command as the canonical per-runtime setup and recovery path.
