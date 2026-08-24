@@ -39,7 +39,11 @@ pi install git:github.com/eiei114/pi-agent-bundles -l
 - `pi-multica-spine`
 - `context-mode`
 - `@howaboua/pi-codex-conversion`
-- `@offbynan/pi-cursor-provider`
+- `pi-cursor-embedded-compat` (loaded before Cursor SDK)
+- `pi-cursor-sdk`
+- `@cursor/sdk` `1.0.23`
+- `@connectrpc/connect` `1.7.0`
+- `@bufbuild/protobuf` `1.10.0`
 - `pi-mcp-adapter`
 
 Install the Git package on each runtime, then point `-e` at Pi's documented Git checkout path. This keeps Multica config portable across runtimes, keeps `--no-extensions`, and avoids machine-local `C:/...` paths:
@@ -62,6 +66,8 @@ Verify before enabling scheduled work:
 pi list
 test -f ~/.pi/agent/git/github.com/eiei114/pi-agent-bundles/shared/extensions/agent-bundle-loader.ts
 ```
+
+Cursor bundles load the guarded compatibility shim before the `pi-cursor-sdk` singleton. The old OAuth Cursor provider is intentionally not bundled. First rollout uses an exact Git tag; keep the previous explicit SDK profile available for rollback.
 
 ## Included bundles
 

@@ -1,6 +1,6 @@
 {
   "name": "pi-agent-bundles",
-  "version": "0.7.2",
+  "version": "0.8.0",
   "private": true,
   "description": "Git-distributed Pi agent bundles for Multica and project-specific runtime defaults.",
   "type": "module",
@@ -42,9 +42,13 @@
     "skills": []
   },
   "dependencies": {
+    "@bufbuild/protobuf": "1.10.0",
+    "@connectrpc/connect": "1.7.0",
+    "@cursor/sdk": "1.0.23",
     "@howaboua/pi-codex-conversion": "^3.0.11",
-    "@offbynan/pi-cursor-provider": "^0.6.0",
     "context-mode": "^1.0.169",
+    "pi-cursor-embedded-compat": "0.1.0",
+    "pi-cursor-sdk": "0.2.0",
     "pi-fff": "^0.1.12",
     "pi-fff-non-ascii-guard": "^0.1.12",
     "pi-mcp-adapter": "^2.11.0",
@@ -53,9 +57,13 @@
     "pi-smart-fetch": "^0.3.17"
   },
   "bundledDependencies": [
+    "@bufbuild/protobuf",
+    "@connectrpc/connect",
+    "@cursor/sdk",
     "@howaboua/pi-codex-conversion",
-    "@offbynan/pi-cursor-provider",
     "context-mode",
+    "pi-cursor-embedded-compat",
+    "pi-cursor-sdk",
     "pi-fff",
     "pi-fff-non-ascii-guard",
     "pi-mcp-adapter",
@@ -77,9 +85,13 @@
     "typescript": "^6.0.3"
   },
   "bundleDependencies": [
+    "@bufbuild/protobuf",
+    "@connectrpc/connect",
+    "@cursor/sdk",
     "@howaboua/pi-codex-conversion",
-    "@offbynan/pi-cursor-provider",
     "context-mode",
+    "pi-cursor-embedded-compat",
+    "pi-cursor-sdk",
     "pi-fff",
     "pi-fff-non-ascii-guard",
     "pi-mcp-adapter",

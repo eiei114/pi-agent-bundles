@@ -20,6 +20,8 @@ const forbiddenGlobalExtensions = [
   "./node_modules/context-mode/build/adapters/pi/extension.js",
   "./node_modules/@howaboua/pi-codex-conversion/src/index.ts",
   "./node_modules/@offbynan/pi-cursor-provider/index.ts",
+  "./node_modules/pi-cursor-embedded-compat/extensions/index.ts",
+  "./node_modules/pi-cursor-sdk/src/index.ts",
 ];
 
 
@@ -52,11 +54,11 @@ const allBundleSlugs = [...genericBundleSlugs, ...iosBundleSlugs];
 
 const genericExtensionProfiles = {
   "cursor-composer-builder": {
-    includes: ["pi-mcp-adapter", "context-mode", "@offbynan/pi-cursor-provider"],
+    includes: ["pi-mcp-adapter", "context-mode", "pi-cursor-embedded-compat", "pi-cursor-sdk"],
     excludes: ["@howaboua/pi-codex-conversion"],
   },
   "cursor-patch-runner": {
-    includes: ["pi-mcp-adapter", "context-mode", "@offbynan/pi-cursor-provider"],
+    includes: ["pi-mcp-adapter", "context-mode", "pi-cursor-embedded-compat", "pi-cursor-sdk"],
     excludes: ["@howaboua/pi-codex-conversion"],
   },
   "codex-release-engineer": {
@@ -83,7 +85,7 @@ const genericExtensionProfiles = {
 
 const iosExtensionProfiles = {
   "ios-cursor-builder": {
-    includes: ["pi-mcp-adapter", "context-mode", "@offbynan/pi-cursor-provider"],
+    includes: ["pi-mcp-adapter", "context-mode", "pi-cursor-embedded-compat", "pi-cursor-sdk"],
     excludes: ["pi-smart-fetch", "@howaboua/pi-codex-conversion"],
   },
   "ios-codex54-builder": {
@@ -101,9 +103,13 @@ const iosExtensionProfiles = {
 };
 
 const bundledPackages = [
+  "@bufbuild/protobuf",
+  "@connectrpc/connect",
+  "@cursor/sdk",
   "@howaboua/pi-codex-conversion",
-  "@offbynan/pi-cursor-provider",
   "context-mode",
+  "pi-cursor-embedded-compat",
+  "pi-cursor-sdk",
   "pi-fff",
   "pi-fff-non-ascii-guard",
   "pi-mcp-adapter",
@@ -133,6 +139,12 @@ test("package declares all Multica agent extension dependencies", () => {
   }
 });
 
+test("Cursor compatibility shim loads before the singleton SDK", async () => {
+  const loader = await readFile(new URL("../shared/extensions/load-cursor-sdk.mjs", import.meta.url), "utf8");
+  assert.ok(loader.indexOf("pi-cursor-embedded-compat") < loader.indexOf("pi-cursor-sdk"));
+  assert.ok(!loader.includes("@offbynan/pi-cursor-provider"));
+});
+
 
 test("context-mode is loaded only through selected role bundles", async () => {
   const builderIndex = await readFile(new URL("../bundles/ios-codex54-builder/extensions/index.ts", import.meta.url), "utf8");
@@ -160,6 +172,7 @@ test("package includes non-iOS Multica agent bundle loader profiles", async () =
     const readme = await readFile(new URL(`../bundles/${slug}/README.md`, import.meta.url), "utf8");
     const status = await readFile(new URL(`../bundles/${slug}/extensions/status.ts`, import.meta.url), "utf8");
     const index = await readFile(new URL(`../bundles/${slug}/extensions/index.ts`, import.meta.url), "utf8");
+    const cursorLoader = await readFile(new URL("../shared/extensions/load-cursor-sdk.mjs", import.meta.url), "utf8");
 
     assert.match(readme, new RegExp(String.raw`Bundle slug: \`${slug}\``));
     assert.match(readme, new RegExp(String.raw`--no-extensions`));
@@ -175,11 +188,12 @@ test("package includes non-iOS Multica agent bundle loader profiles", async () =
 
     const profile = genericExtensionProfiles[slug];
     if (!profile) continue;
+    const profileSource = `${index}\n${cursorLoader}`;
     for (const needle of profile.includes) {
-      assert.ok(index.includes(needle), `${slug} should include ${needle}`);
+      assert.ok(profileSource.includes(needle), `${slug} should include ${needle}`);
     }
     for (const needle of profile.excludes) {
-      assert.ok(!index.includes(needle), `${slug} should not include ${needle}`);
+      assert.ok(!profileSource.includes(needle), `${slug} should not include ${needle}`);
     }
   }
 });
@@ -199,12 +213,14 @@ test("package includes dedicated generic iOS agent bundles", async () => {
     const loader = await readFile(new URL("../shared/extensions/agent-bundle-loader.ts", import.meta.url), "utf8");
     assert.ok(loader.includes(`"${slug}"`), `${slug} should be registered in the bundle loader`);
     const index = await readFile(new URL(`../bundles/${slug}/extensions/index.ts`, import.meta.url), "utf8");
+    const cursorLoader = await readFile(new URL("../shared/extensions/load-cursor-sdk.mjs", import.meta.url), "utf8");
     const profile = iosExtensionProfiles[slug];
+    const profileSource = `${index}\n${cursorLoader}`;
     for (const needle of profile.includes) {
-      assert.ok(index.includes(needle), `${slug} should include ${needle}`);
+      assert.ok(profileSource.includes(needle), `${slug} should include ${needle}`);
     }
     for (const needle of profile.excludes) {
-      assert.ok(!index.includes(needle), `${slug} should not include ${needle}`);
+      assert.ok(!profileSource.includes(needle), `${slug} should not include ${needle}`);
     }
     assert.equal(mcp.mcpServers.xcodebuildmcp.command, "npx");
     assert.deepEqual(mcp.mcpServers.xcodebuildmcp.args, ["-y", "xcodebuildmcp@2.6.2", "mcp"]);

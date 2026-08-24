@@ -8,7 +8,7 @@ import mcpAdapter from "../../../node_modules/pi-mcp-adapter/index.ts";
 import multicaSpine from "../../../node_modules/pi-multica-spine/extensions/index.ts";
 import contextMode from "../../../node_modules/context-mode/build/adapters/pi/extension.js";
 import postContextGuard from "../../../shared/post-context-mode/extensions/multica-run-guard.ts";
-import cursorProvider from "../../../node_modules/@offbynan/pi-cursor-provider/index.ts";
+import loadCursorSdk from "../../../shared/extensions/load-cursor-sdk.mjs";
 import status from "./status.ts";
 
 export default async function CursorPatchRunnerBundle(pi: ExtensionAPI) {
@@ -21,6 +21,6 @@ export default async function CursorPatchRunnerBundle(pi: ExtensionAPI) {
   await multicaSpine(pi);
   await contextMode(pi);
   await postContextGuard(pi);
-  await cursorProvider(pi);
+  await loadCursorSdk(pi);
   await status(pi);
 }
