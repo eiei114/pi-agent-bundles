@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Replace the old OAuth Cursor provider in Cursor bundles with exact-pinned `pi-cursor-sdk` plus `pi-cursor-embedded-compat`.
+- Pin the live DOT-1586 dependency graph (`@cursor/sdk` 1.0.23, `@connectrpc/connect` 1.7.0, `@bufbuild/protobuf` 1.10.0).
+
 ## 0.7.2
 
 ### Changed

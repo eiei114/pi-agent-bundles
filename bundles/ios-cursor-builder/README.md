@@ -10,6 +10,7 @@ SwiftUI/UI-heavy implementation role for reusable components, previews, screensh
 
 - `extensions/index.ts` — loads this bundle's role-specific extension profile.
 - `extensions/status.ts` — registers `/ios-cursor-builder:bundle-status` for load verification.
+- `shared/extensions/load-cursor-sdk.mjs` — loads `pi-cursor-embedded-compat` before the `pi-cursor-sdk` singleton.
 - `skills/` — reserved for future agent-specific skills.
 - `mcp.json` — source-controlled MCP adapter config that can be copied into the Multica agent MCP config. No secrets.
 - Delegated Pi extensions are loaded by `extensions/index.ts`; Multica custom args should point at the git package plus `--agent-bundle`, not local runtime paths.
@@ -48,6 +49,7 @@ Extension profile: Cursor provider, file search, build/test MCP, context-mode, a
 ## Rules
 
 - Do not store secrets in this bundle.
+- Keep the exact-pinned Cursor dependency graph and do not reintroduce the OAuth provider.
 - Seed config only when missing; never overwrite human-edited config.
 - Keep command names prefixed with `ios-cursor-builder` to avoid global command collisions.
 - Keep MCP output token-efficient; prefer the adapter proxy tool unless a small direct-tool allowlist is intentionally configured.

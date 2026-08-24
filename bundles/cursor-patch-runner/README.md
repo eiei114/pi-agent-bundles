@@ -9,6 +9,7 @@ Cursor mechanical patch role for small fixes, formatting, typo and config change
 ## Resources
 
 - `extensions/status.ts` — registers `/cursor-patch-runner:bundle-status` for load verification.
+- `shared/extensions/load-cursor-sdk.mjs` — loads `pi-cursor-embedded-compat` before the `pi-cursor-sdk` singleton.
 - `skills/` — reserved for future agent-specific skills.
 
 ## Recommended Multica custom args
@@ -24,5 +25,6 @@ Use the installed Git package checkout, matching the iOS agent bundle pattern:
 ## Rules
 
 - Do not store secrets in this bundle.
+- Keep the exact-pinned Cursor dependency graph and do not reintroduce the OAuth provider.
 - Seed config only when missing; never overwrite human-edited config.
 - Keep command names prefixed with `cursor-patch-runner` to avoid global command collisions.
