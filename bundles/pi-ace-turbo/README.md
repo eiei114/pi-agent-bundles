@@ -4,7 +4,8 @@ Bundle slug: `pi-ace-turbo`
 
 ## Purpose
 
-Fast queue control role such as Todo Runner and Backlog Promoter.
+Fast controller role for deterministic queue and maintenance automation. This
+profile does not implement issues or produce pull requests.
 
 ## Resources
 
@@ -24,5 +25,6 @@ Use the installed Git package checkout, matching the iOS agent bundle pattern:
 ## Rules
 
 - Do not store secrets in this bundle.
+- Do not load `pi-multica-spine`; it is reserved for PR-producing work agents.
 - Seed config only when missing; never overwrite human-edited config.
 - Keep command names prefixed with `pi-ace-turbo` to avoid global command collisions.
