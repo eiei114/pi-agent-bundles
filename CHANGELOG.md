@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Remove research-only smart fetch and MCP adapter extensions from the Cursor Patch Runner bundle.
 - Add a pre-install Cursor dependency contract check and block incompatible protobuf/Connect major-version noise until the SDK contract changes.
 - Remove work-agent-only `pi-multica-spine` from the Pi Ace Turbo controller bundle.
 - Replace the old OAuth Cursor provider in Cursor bundles with exact-pinned `pi-cursor-sdk` plus `pi-cursor-embedded-compat`.
