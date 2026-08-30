@@ -622,6 +622,7 @@ function resolveNpmCliPath(): string {
 
   candidates.push(
     resolve(dirname(process.execPath), "node_modules", "npm", "bin", "npm-cli.js"),
+    resolve(dirname(process.execPath), "..", "lib", "node_modules", "npm", "bin", "npm-cli.js"),
   );
 
   for (const candidate of candidates) {
@@ -631,7 +632,7 @@ function resolveNpmCliPath(): string {
   }
 
   throw new Error(
-    "npm CLI unavailable: no validated absolute npm-cli.js candidate (npm_execpath or node_modules/npm/bin/npm-cli.js)",
+    "npm CLI unavailable: no validated absolute npm-cli.js candidate (npm_execpath or Node-adjacent npm CLI)",
   );
 }
 
