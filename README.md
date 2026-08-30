@@ -28,7 +28,8 @@ pi install git:github.com/eiei114/pi-agent-bundles -l
 - Activation stages the release in a versioned release root, runs `npm ci` and smoke there, then atomically updates `.bundle-git-sync.json`
 - Runtime bundle imports come from the verified release root with a cache-busted `bundleCommit` query parameter
 - Failed validation keeps the previous verified release pointer and never loads the candidate
-- Concurrent activations are serialized with an exclusive lock (`.bundle-activation.lock`) that records pid/start time and expires safely when stale
+- Concurrent activations are serialized with an exclusive lock (`.bundle-activation.lock`) that records pid/start time, refreshes heartbeat during long validation, and expires only when the owner is gone or heartbeat is stale
+- Upgrading from `v0.8.3` or earlier: the first run can bootstrap from the installed checkout when HEAD matches an exact `v*` tag, `node_modules` is present, dependency smoke passes, and the working tree is clean except for an explicitly tolerated `package-lock.json`-only mutation; otherwise run with `PI_AGENT_BUNDLES_SYNC=always` once to prewarm a verified release root before strict loading applies
 
 ### Cursor Composer Core vs Connected rollout
 

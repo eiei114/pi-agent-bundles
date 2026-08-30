@@ -25,13 +25,19 @@ test("bundle git sync uses versioned release roots instead of checkout mutation"
   assert.doesNotMatch(source, /checkout", "--detach"/);
   assert.doesNotMatch(source, /npm install/);
   assert.doesNotMatch(source, /dirty-working-tree/);
+  assert.match(source, /packageLockHash/);
+  assert.match(source, /refreshActivationLockHeartbeat/);
+  assert.match(source, /stagingDirForPid/);
+  assert.doesNotMatch(source, /rollback:/);
   assert.doesNotMatch(source, /rollbackToKnownGood/);
+  assert.equal((source.match(/rmSync\(releaseRoot/g) ?? []).length, 1);
 });
 
 test("agent bundle loader syncs before verified dynamic bundle import", () => {
   const path = join(repoRoot, "shared/extensions/agent-bundle-loader.ts");
   const source = readFileSync(path, "utf8");
-  assert.match(source, /syncBundleGitCheckout\(/);
+  assert.match(source, /await syncBundleGitCheckout\(\)/);
+  assert.doesNotMatch(source, /sync\.rollback/);
   assert.match(source, /resolveBundleImportUrl\(/);
   assert.match(source, /await import\(importUrl\)/);
   assert.doesNotMatch(source, /^import .* from "\.\.\/\.\.\/bundles\//m);
@@ -46,6 +52,8 @@ test("README documents immutable versioned auto-sync", () => {
   assert.match(source, /Auto-sync latest release tag/);
   assert.match(source, /PI_AGENT_BUNDLES_SYNC/);
   assert.match(source, /versioned release root/);
+  assert.match(source, /v0\.8\.3/);
+  assert.match(source, /package-lock\.json/);
   assert.match(source, /cursor-composer-connected/);
   assert.match(source, /pi install git:github\.com\/eiei114\/pi-agent-bundles\r?\n/);
 });

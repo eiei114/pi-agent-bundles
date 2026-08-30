@@ -36,16 +36,12 @@ export default async function agentBundleLoader(pi: ExtensionAPI) {
   const slug = getBundleSlug();
   if (!slug) return;
 
-  const sync = syncBundleGitCheckout();
+  const sync = await syncBundleGitCheckout();
   if (sync.error) {
     pi.logger?.warn?.(`pi-agent-bundles auto-sync warning: ${sync.error}`);
   } else if (sync.updated) {
     pi.logger?.info?.(
       `pi-agent-bundles activated ${sync.commit ?? sync.tag ?? "release"} at ${sync.releaseRoot ?? "verified root"}`,
-    );
-  } else if (sync.rollback) {
-    pi.logger?.warn?.(
-      `pi-agent-bundles reverted to known-good release ${sync.commit ?? sync.tag ?? "previous"} after activation failure`,
     );
   }
 
