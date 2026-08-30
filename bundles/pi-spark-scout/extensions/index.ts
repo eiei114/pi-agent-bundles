@@ -1,6 +1,4 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
-import modelFallback from "../../../node_modules/pi-model-fallback/extensions/index.ts";
-import seedModelFallback from "../../../shared/extensions/seed-model-fallback.ts";
 import fff from "../../../node_modules/pi-fff/index.ts";
 import nonAsciiGuard from "../../../node_modules/pi-fff-non-ascii-guard/extensions/pi-fff-non-ascii-guard.ts";
 import smartFetch from "../../../node_modules/pi-smart-fetch/dist/index.js";
@@ -9,8 +7,6 @@ import postContextGuard from "../../../shared/post-context-mode/extensions/multi
 import status from "./status.ts";
 
 export default async function PiSparkScoutBundle(pi: ExtensionAPI) {
-  await modelFallback(pi);
-  await seedModelFallback(pi);
   await fff(pi);
   await nonAsciiGuard(pi);
   await smartFetch(pi);

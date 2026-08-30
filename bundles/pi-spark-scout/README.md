@@ -25,5 +25,5 @@ Use the installed Git package checkout:
 
 - Do not store secrets in this bundle.
 - Do not load `pi-multica-spine`; it is reserved for PR-producing work agents.
-- Seed config only when missing; never overwrite human-edited config.
+- Do not load or seed model fallback. Provider failure stops for explicit rerouting.
 - Keep command names prefixed with `pi-spark-scout` to avoid global command collisions.
