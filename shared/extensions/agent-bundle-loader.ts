@@ -1,31 +1,31 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
-import { syncBundleGitCheckout } from "./bundle-git-sync.ts";
+import { getActiveRelease, resolveBundleImportUrl, syncBundleGitCheckout } from "./bundle-git-sync.ts";
 
-const bundleLoaders = {
-  "cursor-composer-builder": () => import("../../bundles/cursor-composer-builder/extensions/index.ts"),
-  "cursor-composer-core": () => import("../../bundles/cursor-composer-core/extensions/index.ts"),
-  "cursor-composer-connected": () => import("../../bundles/cursor-composer-connected/extensions/index.ts"),
-  "cursor-patch-runner": () => import("../../bundles/cursor-patch-runner/extensions/index.ts"),
-  "codex-release-engineer": () => import("../../bundles/codex-release-engineer/extensions/index.ts"),
-  "pi-glm-builder": () => import("../../bundles/pi-glm-builder/extensions/index.ts"),
-  "pi-ace": () => import("../../bundles/pi-ace/extensions/index.ts"),
-  "pi-ace-balanced": () => import("../../bundles/pi-ace-balanced/extensions/index.ts"),
-  "pi-ace-air": () => import("../../bundles/pi-ace-air/extensions/index.ts"),
-  "pi-ace-turbo": () => import("../../bundles/pi-ace-turbo/extensions/index.ts"),
-  "pi-spark-router": () => import("../../bundles/pi-spark-router/extensions/index.ts"),
-  "pi-spark-scout": () => import("../../bundles/pi-spark-scout/extensions/index.ts"),
-  "pi-oss-orchestrator": () => import("../../bundles/pi-oss-orchestrator/extensions/index.ts"),
-  "pi-extension-research-scout": () => import("../../bundles/pi-extension-research-scout/extensions/index.ts"),
-  "codex-spark-patch-runner": () => import("../../bundles/codex-spark-patch-runner/extensions/index.ts"),
-  "multica-intake-agent": () => import("../../bundles/multica-intake-agent/extensions/index.ts"),
-  "multica-maintenance": () => import("../../bundles/multica-maintenance/extensions/index.ts"),
-  "ios-cursor-builder": () => import("../../bundles/ios-cursor-builder/extensions/index.ts"),
-  "ios-codex54-builder": () => import("../../bundles/ios-codex54-builder/extensions/index.ts"),
-  "ios-codex55-fixer": () => import("../../bundles/ios-codex55-fixer/extensions/index.ts"),
-  "ios-codex55-planner": () => import("../../bundles/ios-codex55-planner/extensions/index.ts"),
-} as const;
+const bundleSlugs = [
+  "cursor-composer-builder",
+  "cursor-composer-core",
+  "cursor-composer-connected",
+  "cursor-patch-runner",
+  "codex-release-engineer",
+  "pi-glm-builder",
+  "pi-ace",
+  "pi-ace-balanced",
+  "pi-ace-air",
+  "pi-ace-turbo",
+  "pi-spark-router",
+  "pi-spark-scout",
+  "pi-oss-orchestrator",
+  "pi-extension-research-scout",
+  "codex-spark-patch-runner",
+  "multica-intake-agent",
+  "multica-maintenance",
+  "ios-cursor-builder",
+  "ios-codex54-builder",
+  "ios-codex55-fixer",
+  "ios-codex55-planner",
+] as const;
 
-type BundleSlug = keyof typeof bundleLoaders;
+type BundleSlug = (typeof bundleSlugs)[number];
 
 export default async function agentBundleLoader(pi: ExtensionAPI) {
   pi.registerFlag("agent-bundle", {
@@ -40,21 +40,38 @@ export default async function agentBundleLoader(pi: ExtensionAPI) {
   if (sync.error) {
     pi.logger?.warn?.(`pi-agent-bundles auto-sync warning: ${sync.error}`);
   } else if (sync.updated) {
-    pi.logger?.info?.(`pi-agent-bundles updated to ${sync.commit ?? sync.tag ?? "latest tag"}`);
+    pi.logger?.info?.(
+      `pi-agent-bundles activated ${sync.commit ?? sync.tag ?? "release"} at ${sync.releaseRoot ?? "verified root"}`,
+    );
   } else if (sync.rollback) {
     pi.logger?.warn?.(
-      `pi-agent-bundles kept known-good release ${sync.tag ?? sync.commit ?? "previous"} after activation failure`,
+      `pi-agent-bundles reverted to known-good release ${sync.commit ?? sync.tag ?? "previous"} after activation failure`,
     );
   }
 
-  const load = bundleLoaders[slug];
-  if (!load) {
-    const known = Object.keys(bundleLoaders).join(", ");
-    throw new Error(`Unknown agent bundle '${slug}'. Known bundles: ${known}`);
+  if (!isKnownBundleSlug(slug)) {
+    throw new Error(`Unknown agent bundle '${slug}'. Known bundles: ${bundleSlugs.join(", ")}`);
   }
 
-  const module = await load();
+  const active = getActiveRelease();
+  if (!active.verified) {
+    const syncEnabled = !["0", "false", "off", "disabled"].includes(
+      (process.env.PI_AGENT_BUNDLES_SYNC?.trim().toLowerCase() ?? ""),
+    );
+    if (syncEnabled) {
+      throw new Error(
+        "Refusing to load agent bundle before a verified release is active. Run sync successfully or disable PI_AGENT_BUNDLES_SYNC.",
+      );
+    }
+  }
+
+  const importUrl = resolveBundleImportUrl(slug);
+  const module = await import(importUrl);
   await module.default(pi);
+}
+
+function isKnownBundleSlug(slug: BundleSlug | string): slug is BundleSlug {
+  return (bundleSlugs as readonly string[]).includes(slug);
 }
 
 function getBundleSlug(): BundleSlug | undefined {

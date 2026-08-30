@@ -40,3 +40,4 @@ tmp/
 .bundle-git-sync.json
 .bundle-activation.lock
 .bundle-activation-staging/
+.bundle-releases/

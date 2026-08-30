@@ -2,9 +2,10 @@
 
 ## Unreleased
 
-- Activate bundle releases atomically: stage checkout, run `npm ci`, smoke, then switch the active checkout; keep the previous verified release on failure.
+- Activate bundle releases immutably: validate each tag in `.bundle-releases/<commit>/`, update only the active release pointer, and import role bundles from the verified root with cache-busted dynamic imports.
+- Serialize activation with an exclusive lock file that records pid/start time and rejects concurrent or stale holders safely.
 - Load selected role bundles with dynamic import only after auto-sync completes to avoid stale in-memory module activation.
-- Split Cursor Composer into Core and Connected profiles; keep `cursor-composer-builder` Core-compatible.
+- Split Cursor Composer into Core and Connected profiles; keep `cursor-composer-builder` Core-compatible and document Connected migration as a breaking rollout requirement.
 - Remove work-agent-only `pi-multica-spine` from Pi Ace Balanced, Pi Spark Router, and Pi Spark Scout controller bundles.
 - Remove research-only smart fetch and MCP adapter extensions from the Cursor Patch Runner bundle.
 - Add a pre-install Cursor dependency contract check and block incompatible protobuf/Connect major-version noise until the SDK contract changes.
