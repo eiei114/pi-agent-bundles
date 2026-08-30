@@ -370,6 +370,201 @@ test(`integration: npm_execpath candidate wins on ${process.platform}`, async ()
   }
 });
 
+test(`integration: npm_execpath ignores non npm-cli.js absolute paths on ${process.platform}`, async () => {
+  const testRoot = mkdtempSync(join(tmpdir(), "bundle-sync-npm-execpath-reject-"));
+  const fakeCli = resolve(testRoot, "npm.js");
+  try {
+    mkdirSync(testRoot, { recursive: true });
+    writeFileSync(fakeCli, "console.log('ignored');\n", "utf8");
+    process.env.npm_execpath = fakeCli;
+
+    const internals = await loadInternals(testRoot);
+    const resolved = internals.resolveNpmCliPath();
+    assert.notEqual(resolved, resolve(fakeCli));
+    assert.match(resolved, /npm-cli\.js$/);
+  } finally {
+    delete process.env.PI_AGENT_BUNDLES_TEST_ROOT;
+    delete process.env.npm_execpath;
+    rmSync(testRoot, { recursive: true, force: true });
+  }
+});
+
+function seedWorktreeReleaseFiles(releaseRoot) {
+  mkdirSync(join(releaseRoot, "bundles/cursor-composer-builder/extensions"), { recursive: true });
+  mkdirSync(join(releaseRoot, "node_modules"), { recursive: true });
+  writeFileSync(join(releaseRoot, "package.json"), '{"name":"pi-agent-bundles"}\n', "utf8");
+  writeFileSync(join(releaseRoot, "package-lock.json"), '{ "lockfileVersion": 3, "packages": { "": {} } }\n', "utf8");
+  writeFileSync(join(releaseRoot, "node_modules/.package-lock.json"), "{}\n", "utf8");
+  writeFileSync(
+    join(releaseRoot, "bundles/cursor-composer-builder/extensions/index.ts"),
+    "export default async function bundle() {}\n",
+    "utf8",
+  );
+}
+
+async function initTaggedTempRepo(testRoot) {
+  mkdirSync(testRoot, { recursive: true });
+  writeFileSync(join(testRoot, "README.md"), "seed\n", "utf8");
+  writeFileSync(join(testRoot, "package.json"), '{"name":"pi-agent-bundles"}\n', "utf8");
+  writeFileSync(join(testRoot, "package-lock.json"), '{ "lockfileVersion": 3, "packages": { "": {} } }\n', "utf8");
+
+  const { spawnSync } = await import("node:child_process");
+  const runGitLocal = (args) => spawnSync("git", args, { cwd: testRoot, encoding: "utf8", shell: false });
+
+  assert.equal(runGitLocal(["init", "-b", "main"]).status, 0);
+  assert.equal(runGitLocal(["config", "user.email", "test@example.com"]).status, 0);
+  assert.equal(runGitLocal(["config", "user.name", "Test"]).status, 0);
+  assert.equal(runGitLocal(["add", "."]).status, 0);
+  assert.equal(runGitLocal(["commit", "-m", "seed"]).status, 0);
+  assert.equal(runGitLocal(["tag", "v0.0.1"]).status, 0);
+
+  return {
+    commit: trimOutput(runGitLocal(["rev-parse", "HEAD"]).stdout),
+    runGitLocal,
+  };
+}
+
+test("integration: protected same-commit repair swaps pointer and keeps old active as previous", async () => {
+  const testRoot = mkdtempSync(join(tmpdir(), "bundle-sync-repair-success-"));
+  try {
+    const { commit, runGitLocal } = await initTaggedTempRepo(testRoot);
+    const internals = await loadInternals(testRoot);
+    const previousCommit = "aaa1111111111111111111111111111111111111111";
+    const previousRoot = seedVerifiedRelease(internals, previousCommit, "v0.0.0");
+
+    const canonicalRoot = join(internals.RELEASES_DIR, commit);
+    mkdirSync(dirname(canonicalRoot), { recursive: true });
+    assert.equal(runGitLocal(["worktree", "add", "--detach", canonicalRoot, "v0.0.1"]).status, 0);
+    seedWorktreeReleaseFiles(canonicalRoot);
+    rmSync(join(canonicalRoot, "node_modules"), { recursive: true, force: true });
+    assert.equal(internals.isVerifiedReleaseRoot(canonicalRoot, commit), false);
+
+    internals.writeState({
+      activeReleaseRoot: canonicalRoot,
+      activeCommit: commit,
+      activeTag: "v0.0.1",
+      previousReleaseRoot: previousRoot,
+      previousCommit,
+      previousTag: "v0.0.0",
+    });
+
+    const stagingDir = internals.stagingDirForPid();
+    assert.equal(runGitLocal(["worktree", "add", "--detach", stagingDir, "v0.0.1"]).status, 0);
+    seedWorktreeReleaseFiles(stagingDir);
+
+    const promotion = internals.resolvePromotionTarget(commit, internals.readState());
+    assert.notEqual(promotion.targetRoot, canonicalRoot);
+    assert.match(promotion.targetRoot, new RegExp(`${commit}\\.repair\\.`));
+    assert.equal(promotion.removeExistingTarget, false);
+    assert.equal(existsSync(canonicalRoot), true);
+
+    const promoted = internals.promoteStagingWorktree(
+      stagingDir,
+      promotion.targetRoot,
+      promotion.removeExistingTarget,
+    );
+    assert.equal(promoted.ok, true, promoted.error);
+    internals.writeVerifiedReleaseMarker(promotion.targetRoot, commit, "v0.0.1");
+
+    const pointer = internals.commitActiveRelease(internals.readState(), {
+      releaseRoot: promotion.targetRoot,
+      commit,
+      tag: "v0.0.1",
+      npmInstalled: true,
+    });
+    assert.equal(pointer.ok, true);
+
+    const state = internals.readState();
+    assert.equal(state.activeReleaseRoot, promotion.targetRoot);
+    assert.equal(state.activeCommit, commit);
+    assert.equal(state.previousReleaseRoot, canonicalRoot);
+    assert.equal(state.previousCommit, commit);
+    assert.equal(existsSync(canonicalRoot), true);
+
+    const active = internals.getActiveRelease();
+    assert.equal(active.root, promotion.targetRoot);
+    assert.equal(active.commit, commit);
+    assert.equal(active.verified, true);
+  } finally {
+    delete process.env.PI_AGENT_BUNDLES_TEST_ROOT;
+    rmSync(testRoot, { recursive: true, force: true });
+  }
+});
+
+test("integration: protected same-commit repair pointer failure preserves active, previous, and getActiveRelease", async () => {
+  const testRoot = mkdtempSync(join(tmpdir(), "bundle-sync-repair-pointer-fail-"));
+  try {
+    const { commit, runGitLocal } = await initTaggedTempRepo(testRoot);
+    const internals = await loadInternals(testRoot);
+    const previousCommit = "bbb2222222222222222222222222222222222222222";
+    const previousRoot = seedVerifiedRelease(internals, previousCommit, "v0.0.0");
+
+    const canonicalRoot = join(internals.RELEASES_DIR, commit);
+    mkdirSync(dirname(canonicalRoot), { recursive: true });
+    assert.equal(runGitLocal(["worktree", "add", "--detach", canonicalRoot, "v0.0.1"]).status, 0);
+    seedWorktreeReleaseFiles(canonicalRoot);
+    rmSync(join(canonicalRoot, "node_modules"), { recursive: true, force: true });
+
+    internals.writeState({
+      activeReleaseRoot: canonicalRoot,
+      activeCommit: commit,
+      activeTag: "v0.0.1",
+      previousReleaseRoot: previousRoot,
+      previousCommit,
+      previousTag: "v0.0.0",
+    });
+
+    const activeBefore = internals.getActiveRelease();
+    const stagingDir = internals.stagingDirForPid();
+    assert.equal(runGitLocal(["worktree", "add", "--detach", stagingDir, "v0.0.1"]).status, 0);
+    seedWorktreeReleaseFiles(stagingDir);
+
+    const promotion = internals.resolvePromotionTarget(commit, internals.readState());
+    const promoted = internals.promoteStagingWorktree(
+      stagingDir,
+      promotion.targetRoot,
+      promotion.removeExistingTarget,
+    );
+    assert.equal(promoted.ok, true, promoted.error);
+    internals.writeVerifiedReleaseMarker(promotion.targetRoot, commit, "v0.0.1");
+    assert.equal(existsSync(promotion.targetRoot), true);
+
+    rmSync(internals.STATE_PATH, { force: true });
+    mkdirSync(internals.STATE_PATH);
+
+    const pointer = internals.commitActiveRelease(
+      {
+        activeReleaseRoot: canonicalRoot,
+        activeCommit: commit,
+        activeTag: "v0.0.1",
+        previousReleaseRoot: previousRoot,
+        previousCommit,
+        previousTag: "v0.0.0",
+      },
+      {
+        releaseRoot: promotion.targetRoot,
+        commit,
+        tag: "v0.0.1",
+        npmInstalled: true,
+      },
+    );
+    assert.equal(pointer.ok, false);
+    assert.match(pointer.error ?? "", /Failed to persist active release pointer|EISDIR|ENOTDIR|EPERM/);
+
+    assert.equal(existsSync(canonicalRoot), true);
+    assert.equal(existsSync(previousRoot), true);
+    assert.equal(existsSync(promotion.targetRoot), true);
+
+    const activeAfter = internals.getActiveRelease();
+    assert.equal(activeAfter.root, activeBefore.root);
+    assert.equal(activeAfter.commit, activeBefore.commit);
+    assert.equal(activeAfter.verified, activeBefore.verified);
+  } finally {
+    delete process.env.PI_AGENT_BUNDLES_TEST_ROOT;
+    rmSync(testRoot, { recursive: true, force: true });
+  }
+});
+
 function trimOutput(value) {
   return (value ?? "").trim();
 }
@@ -447,7 +642,7 @@ test("integration: invalid existing release cleanup uses worktree-aware removal"
     assert.equal(runGitLocal(["worktree", "add", "--detach", stagingDir2, "v0.0.1"]).status, 0);
 
     writeFileSync(join(releaseRoot, "stale.txt"), "stale\n", "utf8");
-    const repromoted = internals.promoteStagingWorktree(stagingDir2, releaseRoot);
+    const repromoted = internals.promoteStagingWorktree(stagingDir2, releaseRoot, true);
     assert.equal(repromoted.ok, true, repromoted.error);
     assert.equal(existsSync(join(releaseRoot, "stale.txt")), false);
 

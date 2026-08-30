@@ -52,6 +52,10 @@ test("bundle git sync uses versioned release roots instead of checkout mutation"
   assert.match(source, /resolveNpmCliPath/);
   assert.match(source, /process\.execPath/);
   assert.match(source, /npm-cli\.js/);
+  assert.match(source, /resolvePromotionTarget/);
+  assert.match(source, /repairRootForCommit/);
+  assert.match(source, /isProtectedReleaseRoot/);
+  assert.match(source, /getProtectedReleaseRoots/);
 });
 
 test("agent bundle loader syncs before verified dynamic bundle import", () => {

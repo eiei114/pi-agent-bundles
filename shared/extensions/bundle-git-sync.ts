@@ -390,10 +390,14 @@ async function activateVerifiedRelease(input: ActivateVerifiedReleaseInput): Pro
     };
   }
 
-  const releaseRoot = releaseRootForCommit(latestCommit);
+  const promotion = resolvePromotionTarget(latestCommit, state);
   mkdirSync(RELEASES_DIR, { recursive: true });
 
-  const promoted = promoteStagingWorktree(stagingDir, releaseRoot);
+  const promoted = promoteStagingWorktree(
+    stagingDir,
+    promotion.targetRoot,
+    promotion.removeExistingTarget,
+  );
   if (!promoted.ok) {
     const error = promoted.error ?? "Failed to promote activation staging worktree";
     writeState({
@@ -412,10 +416,10 @@ async function activateVerifiedRelease(input: ActivateVerifiedReleaseInput): Pro
     };
   }
 
-  writeVerifiedReleaseMarker(releaseRoot, latestCommit, latestTag);
+  writeVerifiedReleaseMarker(promotion.targetRoot, latestCommit, latestTag);
 
   const pointer = commitActiveRelease(state, {
-    releaseRoot,
+    releaseRoot: promotion.targetRoot,
     commit: latestCommit,
     tag: latestTag,
     npmInstalled: true,
@@ -438,7 +442,7 @@ async function activateVerifiedRelease(input: ActivateVerifiedReleaseInput): Pro
     npmInstalled: true,
     tag: latestTag,
     commit: latestCommit,
-    releaseRoot,
+    releaseRoot: promotion.targetRoot,
   };
 }
 
@@ -541,11 +545,55 @@ function removeReleaseWorktree(releaseRoot: string): void {
   pruneWorktrees();
 }
 
+function getProtectedReleaseRoots(state: SyncState): Set<string> {
+  const normalized = normalizeState(state);
+  const protectedRoots = new Set<string>();
+  if (normalized.activeReleaseRoot) {
+    protectedRoots.add(resolve(normalized.activeReleaseRoot));
+  }
+  if (normalized.previousReleaseRoot) {
+    protectedRoots.add(resolve(normalized.previousReleaseRoot));
+  }
+  return protectedRoots;
+}
+
+function isProtectedReleaseRoot(releaseRoot: string, state: SyncState): boolean {
+  return getProtectedReleaseRoots(state).has(resolve(releaseRoot));
+}
+
+function repairRootForCommit(commit: string): string {
+  return join(RELEASES_DIR, `${commit}.repair.${Date.now()}.${process.pid}`);
+}
+
+function resolvePromotionTarget(
+  commit: string,
+  state: SyncState,
+): { targetRoot: string; removeExistingTarget: boolean } {
+  const canonicalRoot = releaseRootForCommit(commit);
+  if (!existsSync(canonicalRoot)) {
+    return { targetRoot: canonicalRoot, removeExistingTarget: false };
+  }
+  if (isVerifiedReleaseRoot(canonicalRoot, commit)) {
+    return { targetRoot: canonicalRoot, removeExistingTarget: false };
+  }
+  if (isProtectedReleaseRoot(canonicalRoot, state)) {
+    return { targetRoot: repairRootForCommit(commit), removeExistingTarget: false };
+  }
+  return { targetRoot: canonicalRoot, removeExistingTarget: true };
+}
+
 function promoteStagingWorktree(
   stagingDir: string,
   releaseRoot: string,
+  removeExistingTarget = false,
 ): { ok: boolean; error?: string } {
   if (existsSync(releaseRoot)) {
+    if (!removeExistingTarget) {
+      return {
+        ok: false,
+        error: `Release root already exists: ${releaseRoot}`,
+      };
+    }
     removeReleaseWorktree(releaseRoot);
   }
 
@@ -566,7 +614,10 @@ function resolveNpmCliPath(): string {
 
   const npmExecpath = process.env.npm_execpath?.trim();
   if (npmExecpath && isAbsolute(npmExecpath) && existsSync(npmExecpath)) {
-    candidates.push(resolve(npmExecpath));
+    const npmCliName = npmExecpath.split(/[/\\]/).pop();
+    if (npmCliName === "npm-cli.js") {
+      candidates.push(resolve(npmExecpath));
+    }
   }
 
   candidates.push(
@@ -1081,6 +1132,11 @@ export const bundleGitSyncInternals = {
   pruneWorktrees,
   promoteStagingWorktree,
   removeReleaseWorktree,
+  getProtectedReleaseRoots,
+  isProtectedReleaseRoot,
+  repairRootForCommit,
+  resolvePromotionTarget,
+  releaseRootForCommit,
   resolveNpmCliPath,
   resolveNpmInvocation,
   prepareStagingWorktree,
