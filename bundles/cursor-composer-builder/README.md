@@ -4,7 +4,7 @@ Bundle slug: `cursor-composer-builder`
 
 ## Purpose
 
-Cursor implementation role for bounded but ambiguous build tasks.
+Cursor implementation role for bounded but ambiguous build tasks. This slug remains Core-compatible and loads the same local coding profile as `cursor-composer-core`.
 
 ## Resources
 

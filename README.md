@@ -25,7 +25,8 @@ pi install git:github.com/eiei114/pi-agent-bundles -l
 - Default: sync at most once every 30 minutes (`PI_AGENT_BUNDLES_SYNC_MINUTES`)
 - Disable: `PI_AGENT_BUNDLES_SYNC=0`
 - Force every run: `PI_AGENT_BUNDLES_SYNC=always`
-- If `package-lock.json` changes after sync, `npm install` may run at most once every 6 hours (`PI_AGENT_BUNDLES_NPM_MINUTES`)
+- Activation stages the release in a git worktree, runs `npm ci` and smoke there, then switches the active checkout only after verification succeeds
+- Failed activation keeps the previous verified release and does not mutate the active checkout or `package-lock.json`
 - Local uncommitted changes in the checkout skip auto-sync instead of overwriting your work
 
 ## Bundled existing extensions
@@ -84,6 +85,8 @@ Each bundle has its own `bundles/<slug>/README.md` and unique `/<slug>:bundle-st
 - `pi-extension-research-scout`
 - `pi-glm-builder`
 - `cursor-composer-builder`
+- `cursor-composer-core`
+- `cursor-composer-connected`
 - `cursor-patch-runner`
 - `codex-spark-patch-runner`
 - `codex-release-engineer`

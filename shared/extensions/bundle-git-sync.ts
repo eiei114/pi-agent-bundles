@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { spawnSync } from "node:child_process";
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -9,16 +9,22 @@ type SyncState = {
   lastNpmInstallAt?: string;
   lastSyncedCommit?: string;
   lastSyncedTag?: string;
+  lastVerifiedTag?: string;
+  lastVerifiedCommit?: string;
   lastError?: string;
+  lastActivationFailure?: string;
 };
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 const STATE_PATH = join(REPO_ROOT, ".bundle-git-sync.json");
+const LOCK_PATH = join(REPO_ROOT, ".bundle-activation.lock");
+const STAGING_DIR = join(REPO_ROOT, ".bundle-activation-staging");
 const TAG_PREFIX = process.env.PI_AGENT_BUNDLES_TAG_PREFIX?.trim() || "v";
 
 export type BundleGitSyncResult = {
   attempted: boolean;
   updated: boolean;
+  rollback: boolean;
   tag?: string;
   commit?: string;
   npmInstalled: boolean;
@@ -28,17 +34,24 @@ export type BundleGitSyncResult = {
 
 export function syncBundleGitCheckout(): BundleGitSyncResult {
   if (isDisabled()) {
-    return { attempted: false, updated: false, npmInstalled: false, skippedReason: "disabled" };
+    return { attempted: false, updated: false, rollback: false, npmInstalled: false, skippedReason: "disabled" };
   }
 
   if (!existsSync(join(REPO_ROOT, ".git"))) {
-    return { attempted: false, updated: false, npmInstalled: false, skippedReason: "not-a-git-checkout" };
+    return {
+      attempted: false,
+      updated: false,
+      rollback: false,
+      npmInstalled: false,
+      skippedReason: "not-a-git-checkout",
+    };
   }
 
   const state = readState();
   const force = isForced();
   const gitCooldownMs = readCooldownMinutes("PI_AGENT_BUNDLES_SYNC_MINUTES", 30) * 60 * 1000;
-  const npmCooldownMs = readCooldownMinutes("PI_AGENT_BUNDLES_NPM_MINUTES", 360) * 60 * 1000;
+  const knownGoodTag = state.lastVerifiedTag ?? state.lastSyncedTag;
+  const knownGoodCommit = state.lastVerifiedCommit ?? state.lastSyncedCommit ?? readCurrentCommit();
 
   const fetch = runGit(["fetch", "--tags", "--prune", "origin"]);
   if (fetch.status !== 0) {
@@ -47,10 +60,11 @@ export function syncBundleGitCheckout(): BundleGitSyncResult {
     return {
       attempted: true,
       updated: false,
+      rollback: false,
       npmInstalled: false,
       error,
-      tag: state.lastSyncedTag,
-      commit: readCurrentCommit(),
+      tag: knownGoodTag,
+      commit: readCurrentCommit() ?? knownGoodCommit,
     };
   }
 
@@ -61,10 +75,11 @@ export function syncBundleGitCheckout(): BundleGitSyncResult {
     return {
       attempted: true,
       updated: false,
+      rollback: false,
       npmInstalled: false,
       error,
-      commit: readCurrentCommit(),
-      tag: state.lastSyncedTag,
+      commit: readCurrentCommit() ?? knownGoodCommit,
+      tag: knownGoodTag,
     };
   }
 
@@ -78,6 +93,7 @@ export function syncBundleGitCheckout(): BundleGitSyncResult {
       return {
         attempted: false,
         updated: false,
+        rollback: false,
         npmInstalled: false,
         skippedReason: "git-cooldown",
         tag: latestTag,
@@ -92,11 +108,15 @@ export function syncBundleGitCheckout(): BundleGitSyncResult {
       lastGitSyncAt: new Date().toISOString(),
       lastSyncedTag: latestTag,
       lastSyncedCommit: currentCommit,
+      lastVerifiedTag: latestTag,
+      lastVerifiedCommit: currentCommit,
       lastError: undefined,
+      lastActivationFailure: undefined,
     });
     return {
       attempted: true,
       updated: false,
+      rollback: false,
       npmInstalled: false,
       skippedReason: "already-on-latest-tag",
       tag: latestTag,
@@ -108,71 +128,292 @@ export function syncBundleGitCheckout(): BundleGitSyncResult {
     return {
       attempted: false,
       updated: false,
+      rollback: false,
       npmInstalled: false,
       skippedReason: "dirty-working-tree",
-      tag: currentTag ?? state.lastSyncedTag,
-      commit: currentCommit,
+      tag: currentTag ?? knownGoodTag,
+      commit: currentCommit ?? knownGoodCommit,
       error: "Skip auto-sync because pi-agent-bundles has local changes.",
     };
   }
 
-  const lockBefore = hashFile(join(REPO_ROOT, "package-lock.json"));
-  const checkout = runGit(["checkout", "--detach", latestTag]);
-  if (checkout.status !== 0) {
-    const error = trimOutput(checkout.stderr || checkout.stdout) || `git checkout ${latestTag} failed`;
-    writeState({ ...state, lastError: error });
+  if (!acquireActivationLock()) {
+    return {
+      attempted: false,
+      updated: false,
+      rollback: false,
+      npmInstalled: false,
+      skippedReason: "activation-in-progress",
+      tag: currentTag ?? knownGoodTag,
+      commit: currentCommit ?? knownGoodCommit,
+    };
+  }
+
+  try {
+    return activateVerifiedRelease({
+      state,
+      latestTag,
+      currentTag,
+      currentCommit,
+      knownGoodTag,
+      knownGoodCommit,
+    });
+  } finally {
+    releaseActivationLock();
+    removeStagingWorktree();
+  }
+}
+
+type ActivateVerifiedReleaseInput = {
+  state: SyncState;
+  latestTag: string;
+  currentTag?: string;
+  currentCommit?: string;
+  knownGoodTag?: string;
+  knownGoodCommit?: string;
+};
+
+function activateVerifiedRelease(input: ActivateVerifiedReleaseInput): BundleGitSyncResult {
+  const { state, latestTag, currentTag, currentCommit, knownGoodTag, knownGoodCommit } = input;
+
+  const staged = prepareStagingWorktree(latestTag);
+  if (!staged.ok) {
+    const error = staged.error ?? "Failed to prepare activation staging worktree";
+    writeState({
+      ...state,
+      lastError: error,
+      lastActivationFailure: error,
+    });
     return {
       attempted: true,
       updated: false,
+      rollback: true,
       npmInstalled: false,
       error,
-      tag: currentTag ?? state.lastSyncedTag,
-      commit: currentCommit,
+      tag: knownGoodTag ?? currentTag,
+      commit: currentCommit ?? knownGoodCommit,
+    };
+  }
+
+  const npmStage = runNpmCi(STAGING_DIR);
+  if (!npmStage.ok) {
+    const error = npmStage.error ?? "npm ci failed in activation staging";
+    writeState({
+      ...state,
+      lastError: error,
+      lastActivationFailure: error,
+    });
+    return {
+      attempted: true,
+      updated: false,
+      rollback: true,
+      npmInstalled: false,
+      error,
+      tag: knownGoodTag ?? currentTag,
+      commit: currentCommit ?? knownGoodCommit,
+    };
+  }
+
+  const smoke = runActivationSmoke(STAGING_DIR);
+  if (!smoke.ok) {
+    const error = smoke.error ?? "activation smoke failed in staging";
+    writeState({
+      ...state,
+      lastError: error,
+      lastActivationFailure: error,
+    });
+    return {
+      attempted: true,
+      updated: false,
+      rollback: true,
+      npmInstalled: false,
+      error,
+      tag: knownGoodTag ?? currentTag,
+      commit: currentCommit ?? knownGoodCommit,
+    };
+  }
+
+  const checkout = runGit(["checkout", "--detach", latestTag], REPO_ROOT);
+  if (checkout.status !== 0) {
+    const error = trimOutput(checkout.stderr || checkout.stdout) || `git checkout ${latestTag} failed`;
+    writeState({
+      ...state,
+      lastError: error,
+      lastActivationFailure: error,
+    });
+    return {
+      attempted: true,
+      updated: false,
+      rollback: true,
+      npmInstalled: false,
+      error,
+      tag: knownGoodTag ?? currentTag,
+      commit: currentCommit ?? knownGoodCommit,
     };
   }
 
   const commitAfter = readCurrentCommit();
   const updated = currentCommit !== commitAfter || currentTag !== latestTag;
-  const lockAfter = hashFile(join(REPO_ROOT, "package-lock.json"));
-  const lockChanged = lockBefore !== lockAfter;
-
+  const npmActive = runNpmCi(REPO_ROOT);
   let npmInstalled = false;
   let npmError: string | undefined;
 
-  const shouldInstall =
-    lockChanged &&
-    (force || !state.lastNpmInstallAt || Date.now() - Date.parse(state.lastNpmInstallAt) >= npmCooldownMs);
-
-  if (shouldInstall) {
-    const npm = spawnSync("npm", ["install", "--no-audit", "--no-fund"], {
-      cwd: REPO_ROOT,
-      encoding: "utf8",
-      shell: process.platform === "win32",
-      timeout: 10 * 60 * 1000,
+  if (npmActive.ok) {
+    npmInstalled = true;
+  } else {
+    npmError = npmActive.error ?? "npm ci failed after activation checkout";
+    const rollback = rollbackToKnownGood(knownGoodTag, knownGoodCommit);
+    writeState({
+      ...state,
+      lastError: npmError,
+      lastActivationFailure: npmError,
+      lastSyncedTag: rollback.tag ?? state.lastSyncedTag,
+      lastSyncedCommit: rollback.commit ?? state.lastSyncedCommit,
     });
-    if (npm.status === 0) {
-      npmInstalled = true;
-    } else {
-      npmError = trimOutput(npm.stderr || npm.stdout) || "npm install failed";
-    }
+    return {
+      attempted: true,
+      updated: false,
+      rollback: true,
+      npmInstalled: false,
+      error: npmError,
+      tag: rollback.tag ?? knownGoodTag ?? currentTag,
+      commit: rollback.commit ?? knownGoodCommit ?? currentCommit,
+    };
+  }
+
+  if (!isCleanWorkingTree()) {
+    const error = "Activation left a dirty working tree; keeping previous verified release pointer.";
+    const rollback = rollbackToKnownGood(knownGoodTag, knownGoodCommit);
+    writeState({
+      ...state,
+      lastError: error,
+      lastActivationFailure: error,
+      lastSyncedTag: rollback.tag ?? state.lastSyncedTag,
+      lastSyncedCommit: rollback.commit ?? state.lastSyncedCommit,
+    });
+    return {
+      attempted: true,
+      updated: false,
+      rollback: true,
+      npmInstalled: false,
+      error,
+      tag: rollback.tag ?? knownGoodTag ?? currentTag,
+      commit: rollback.commit ?? knownGoodCommit ?? currentCommit,
+    };
   }
 
   writeState({
     lastGitSyncAt: new Date().toISOString(),
     lastSyncedTag: latestTag,
     lastSyncedCommit: commitAfter,
+    lastVerifiedTag: latestTag,
+    lastVerifiedCommit: commitAfter,
     lastNpmInstallAt: npmInstalled ? new Date().toISOString() : state.lastNpmInstallAt,
     lastError: npmError,
+    lastActivationFailure: undefined,
   });
 
   return {
     attempted: true,
     updated,
+    rollback: false,
     npmInstalled,
     tag: latestTag,
     commit: commitAfter,
     error: npmError,
   };
+}
+
+function prepareStagingWorktree(tag: string): { ok: boolean; error?: string } {
+  removeStagingWorktree();
+
+  const add = runGit(["worktree", "add", "--detach", STAGING_DIR, tag], REPO_ROOT);
+  if (add.status !== 0) {
+    return {
+      ok: false,
+      error: trimOutput(add.stderr || add.stdout) || `git worktree add ${tag} failed`,
+    };
+  }
+
+  return { ok: true };
+}
+
+function removeStagingWorktree(): void {
+  if (!existsSync(STAGING_DIR)) return;
+
+  runGit(["worktree", "remove", "--force", STAGING_DIR], REPO_ROOT);
+  if (existsSync(STAGING_DIR)) {
+    rmSync(STAGING_DIR, { recursive: true, force: true });
+  }
+}
+
+function runActivationSmoke(cwd: string): { ok: boolean; error?: string } {
+  const npm = spawnSync("npm", ["run", "ci"], {
+    cwd,
+    encoding: "utf8",
+    shell: process.platform === "win32",
+    timeout: 15 * 60 * 1000,
+  });
+  if (npm.status === 0) return { ok: true };
+  return {
+    ok: false,
+    error: trimOutput(npm.stderr || npm.stdout) || "npm run ci failed during activation smoke",
+  };
+}
+
+function runNpmCi(cwd: string): { ok: boolean; error?: string } {
+  const npm = spawnSync("npm", ["ci", "--no-audit", "--no-fund"], {
+    cwd,
+    encoding: "utf8",
+    shell: process.platform === "win32",
+    timeout: 10 * 60 * 1000,
+  });
+  if (npm.status === 0) return { ok: true };
+  return {
+    ok: false,
+    error: trimOutput(npm.stderr || npm.stdout) || "npm ci failed",
+  };
+}
+
+function rollbackToKnownGood(
+  tag: string | undefined,
+  commit: string | undefined,
+): { tag?: string; commit?: string } {
+  if (tag) {
+    const checkout = runGit(["checkout", "--detach", tag], REPO_ROOT);
+    if (checkout.status === 0) {
+      runNpmCi(REPO_ROOT);
+      return { tag, commit: readCurrentCommit() ?? commit };
+    }
+  }
+
+  if (commit) {
+    const checkout = runGit(["checkout", "--detach", commit], REPO_ROOT);
+    if (checkout.status === 0) {
+      runNpmCi(REPO_ROOT);
+      return { tag: resolveCurrentTag(), commit: readCurrentCommit() ?? commit };
+    }
+  }
+
+  return { tag, commit };
+}
+
+function acquireActivationLock(): boolean {
+  if (existsSync(LOCK_PATH)) {
+    try {
+      const ageMs = Date.now() - Date.parse(readFileSync(LOCK_PATH, "utf8"));
+      if (Number.isFinite(ageMs) && ageMs < 20 * 60 * 1000) return false;
+    } catch {
+      return false;
+    }
+  }
+
+  writeFileSync(LOCK_PATH, new Date().toISOString(), "utf8");
+  return true;
+}
+
+function releaseActivationLock(): void {
+  if (existsSync(LOCK_PATH)) rmSync(LOCK_PATH, { force: true });
 }
 
 function isDisabled(): boolean {
@@ -245,9 +486,9 @@ function isCleanWorkingTree(): boolean {
   return trimOutput(result.stdout).length === 0;
 }
 
-function runGit(args: string[]) {
+function runGit(args: string[], cwd: string = REPO_ROOT) {
   return spawnSync("git", args, {
-    cwd: REPO_ROOT,
+    cwd,
     encoding: "utf8",
     shell: process.platform === "win32",
     timeout: 2 * 60 * 1000,
@@ -262,3 +503,13 @@ function hashFile(path: string): string | undefined {
 function trimOutput(value: string | null | undefined): string {
   return (value ?? "").trim();
 }
+
+export const bundleGitSyncInternals = {
+  REPO_ROOT,
+  STAGING_DIR,
+  activateVerifiedRelease,
+  isCleanWorkingTree,
+  hashFile,
+  readState,
+  writeState,
+};

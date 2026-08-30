@@ -1,45 +1,28 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { syncBundleGitCheckout } from "./bundle-git-sync.ts";
-import cursorComposerBuilder from "../../bundles/cursor-composer-builder/extensions/index.ts";
-import cursorPatchRunner from "../../bundles/cursor-patch-runner/extensions/index.ts";
-import codexReleaseEngineer from "../../bundles/codex-release-engineer/extensions/index.ts";
-import piGlmBuilder from "../../bundles/pi-glm-builder/extensions/index.ts";
-import piAce from "../../bundles/pi-ace/extensions/index.ts";
-import piAceBalanced from "../../bundles/pi-ace-balanced/extensions/index.ts";
-import piAceAir from "../../bundles/pi-ace-air/extensions/index.ts";
-import piAceTurbo from "../../bundles/pi-ace-turbo/extensions/index.ts";
-import piSparkRouter from "../../bundles/pi-spark-router/extensions/index.ts";
-import piSparkScout from "../../bundles/pi-spark-scout/extensions/index.ts";
-import piOssOrchestrator from "../../bundles/pi-oss-orchestrator/extensions/index.ts";
-import piExtensionResearchScout from "../../bundles/pi-extension-research-scout/extensions/index.ts";
-import codexSparkPatchRunner from "../../bundles/codex-spark-patch-runner/extensions/index.ts";
-import multicaIntakeAgent from "../../bundles/multica-intake-agent/extensions/index.ts";
-import multicaMaintenance from "../../bundles/multica-maintenance/extensions/index.ts";
-import iosCursorBuilder from "../../bundles/ios-cursor-builder/extensions/index.ts";
-import iosCodex54Builder from "../../bundles/ios-codex54-builder/extensions/index.ts";
-import iosCodex55Fixer from "../../bundles/ios-codex55-fixer/extensions/index.ts";
-import iosCodex55Planner from "../../bundles/ios-codex55-planner/extensions/index.ts";
 
 const bundleLoaders = {
-  "cursor-composer-builder": cursorComposerBuilder,
-  "cursor-patch-runner": cursorPatchRunner,
-  "codex-release-engineer": codexReleaseEngineer,
-  "pi-glm-builder": piGlmBuilder,
-  "pi-ace": piAce,
-  "pi-ace-balanced": piAceBalanced,
-  "pi-ace-air": piAceAir,
-  "pi-ace-turbo": piAceTurbo,
-  "pi-spark-router": piSparkRouter,
-  "pi-spark-scout": piSparkScout,
-  "pi-oss-orchestrator": piOssOrchestrator,
-  "pi-extension-research-scout": piExtensionResearchScout,
-  "codex-spark-patch-runner": codexSparkPatchRunner,
-  "multica-intake-agent": multicaIntakeAgent,
-  "multica-maintenance": multicaMaintenance,
-  "ios-cursor-builder": iosCursorBuilder,
-  "ios-codex54-builder": iosCodex54Builder,
-  "ios-codex55-fixer": iosCodex55Fixer,
-  "ios-codex55-planner": iosCodex55Planner,
+  "cursor-composer-builder": () => import("../../bundles/cursor-composer-builder/extensions/index.ts"),
+  "cursor-composer-core": () => import("../../bundles/cursor-composer-core/extensions/index.ts"),
+  "cursor-composer-connected": () => import("../../bundles/cursor-composer-connected/extensions/index.ts"),
+  "cursor-patch-runner": () => import("../../bundles/cursor-patch-runner/extensions/index.ts"),
+  "codex-release-engineer": () => import("../../bundles/codex-release-engineer/extensions/index.ts"),
+  "pi-glm-builder": () => import("../../bundles/pi-glm-builder/extensions/index.ts"),
+  "pi-ace": () => import("../../bundles/pi-ace/extensions/index.ts"),
+  "pi-ace-balanced": () => import("../../bundles/pi-ace-balanced/extensions/index.ts"),
+  "pi-ace-air": () => import("../../bundles/pi-ace-air/extensions/index.ts"),
+  "pi-ace-turbo": () => import("../../bundles/pi-ace-turbo/extensions/index.ts"),
+  "pi-spark-router": () => import("../../bundles/pi-spark-router/extensions/index.ts"),
+  "pi-spark-scout": () => import("../../bundles/pi-spark-scout/extensions/index.ts"),
+  "pi-oss-orchestrator": () => import("../../bundles/pi-oss-orchestrator/extensions/index.ts"),
+  "pi-extension-research-scout": () => import("../../bundles/pi-extension-research-scout/extensions/index.ts"),
+  "codex-spark-patch-runner": () => import("../../bundles/codex-spark-patch-runner/extensions/index.ts"),
+  "multica-intake-agent": () => import("../../bundles/multica-intake-agent/extensions/index.ts"),
+  "multica-maintenance": () => import("../../bundles/multica-maintenance/extensions/index.ts"),
+  "ios-cursor-builder": () => import("../../bundles/ios-cursor-builder/extensions/index.ts"),
+  "ios-codex54-builder": () => import("../../bundles/ios-codex54-builder/extensions/index.ts"),
+  "ios-codex55-fixer": () => import("../../bundles/ios-codex55-fixer/extensions/index.ts"),
+  "ios-codex55-planner": () => import("../../bundles/ios-codex55-planner/extensions/index.ts"),
 } as const;
 
 type BundleSlug = keyof typeof bundleLoaders;
@@ -57,7 +40,11 @@ export default async function agentBundleLoader(pi: ExtensionAPI) {
   if (sync.error) {
     pi.logger?.warn?.(`pi-agent-bundles auto-sync warning: ${sync.error}`);
   } else if (sync.updated) {
-    pi.logger?.info?.(`pi-agent-bundles updated to ${sync.commit ?? "latest tag"}`);
+    pi.logger?.info?.(`pi-agent-bundles updated to ${sync.commit ?? sync.tag ?? "latest tag"}`);
+  } else if (sync.rollback) {
+    pi.logger?.warn?.(
+      `pi-agent-bundles kept known-good release ${sync.tag ?? sync.commit ?? "previous"} after activation failure`,
+    );
   }
 
   const load = bundleLoaders[slug];
@@ -66,7 +53,8 @@ export default async function agentBundleLoader(pi: ExtensionAPI) {
     throw new Error(`Unknown agent bundle '${slug}'. Known bundles: ${known}`);
   }
 
-  await load(pi);
+  const module = await load();
+  await module.default(pi);
 }
 
 function getBundleSlug(): BundleSlug | undefined {

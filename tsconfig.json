@@ -18,6 +18,8 @@
   ],
   "exclude": [
     "shared/extensions/agent-bundle-loader.ts",
+    "shared/extensions/cursor-composer-core-profile.ts",
+    "shared/extensions/cursor-composer-connected-profile.ts",
     "bundles/**/extensions/index.ts"
   ]
 }

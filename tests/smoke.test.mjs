@@ -27,6 +27,8 @@ const forbiddenGlobalExtensions = [
 
 const genericBundleSlugs = [
   "cursor-composer-builder",
+  "cursor-composer-core",
+  "cursor-composer-connected",
   "cursor-patch-runner",
   "codex-release-engineer",
   "pi-glm-builder",
@@ -53,12 +55,23 @@ const iosBundleSlugs = [
 const allBundleSlugs = [...genericBundleSlugs, ...iosBundleSlugs];
 
 const controllerBundlesWithoutSpine = new Set([
+  "pi-ace-balanced",
   "pi-ace-turbo",
+  "pi-spark-router",
+  "pi-spark-scout",
 ]);
 
 const genericExtensionProfiles = {
   "cursor-composer-builder": {
-    includes: ["pi-mcp-adapter", "context-mode", "pi-cursor-embedded-compat", "pi-cursor-sdk"],
+    includes: ["context-mode", "pi-cursor-embedded-compat", "pi-cursor-sdk", "pi-multica-spine"],
+    excludes: ["pi-smart-fetch", "pi-mcp-adapter", "@howaboua/pi-codex-conversion"],
+  },
+  "cursor-composer-core": {
+    includes: ["context-mode", "pi-cursor-embedded-compat", "pi-cursor-sdk", "pi-multica-spine"],
+    excludes: ["pi-smart-fetch", "pi-mcp-adapter", "@howaboua/pi-codex-conversion"],
+  },
+  "cursor-composer-connected": {
+    includes: ["pi-mcp-adapter", "pi-smart-fetch", "context-mode", "pi-cursor-embedded-compat", "pi-cursor-sdk"],
     excludes: ["@howaboua/pi-codex-conversion"],
   },
   "cursor-patch-runner": {
@@ -74,12 +87,12 @@ const genericExtensionProfiles = {
     excludes: ["@offbynan/pi-cursor-provider", "@howaboua/pi-codex-conversion"],
   },
   "pi-spark-router": {
-    includes: ["pi-fff", "context-mode", "pi-multica-spine"],
-    excludes: ["pi-smart-fetch", "@offbynan/pi-cursor-provider", "@howaboua/pi-codex-conversion"],
+    includes: ["pi-fff", "context-mode"],
+    excludes: ["pi-multica-spine", "pi-smart-fetch", "@offbynan/pi-cursor-provider", "@howaboua/pi-codex-conversion"],
   },
   "pi-spark-scout": {
-    includes: ["pi-fff", "pi-smart-fetch", "context-mode", "pi-multica-spine"],
-    excludes: ["@offbynan/pi-cursor-provider", "@howaboua/pi-codex-conversion"],
+    includes: ["pi-fff", "pi-smart-fetch", "context-mode"],
+    excludes: ["pi-multica-spine", "@offbynan/pi-cursor-provider", "@howaboua/pi-codex-conversion"],
   },
   "codex-spark-patch-runner": {
     includes: ["pi-fff", "pi-mcp-adapter", "context-mode", "pi-multica-spine"],
@@ -149,14 +162,23 @@ test("Cursor compatibility shim loads before the singleton SDK", async () => {
   assert.ok(!loader.includes("@offbynan/pi-cursor-provider"));
 });
 
-test("Cursor Patch keeps a smaller extension surface than Composer", async () => {
-  const composer = await readFile(new URL("../bundles/cursor-composer-builder/extensions/index.ts", import.meta.url), "utf8");
+test("Cursor Connected keeps MCP and smart-fetch above Core and Patch", async () => {
+  const core = await readFile(new URL("../bundles/cursor-composer-core/extensions/index.ts", import.meta.url), "utf8");
+  const connected = await readFile(new URL("../bundles/cursor-composer-connected/extensions/index.ts", import.meta.url), "utf8");
+  const builder = await readFile(new URL("../bundles/cursor-composer-builder/extensions/index.ts", import.meta.url), "utf8");
   const patch = await readFile(new URL("../bundles/cursor-patch-runner/extensions/index.ts", import.meta.url), "utf8");
+  const coreProfile = await readFile(new URL("../shared/extensions/cursor-composer-core-profile.ts", import.meta.url), "utf8");
+  const connectedProfile = await readFile(new URL("../shared/extensions/cursor-composer-connected-profile.ts", import.meta.url), "utf8");
 
   for (const extension of ["pi-smart-fetch", "pi-mcp-adapter"]) {
-    assert.ok(composer.includes(extension), `Composer should retain ${extension}`);
+    assert.ok(connectedProfile.includes(extension), `Connected should retain ${extension}`);
+    assert.ok(!coreProfile.includes(extension), `Core should omit ${extension}`);
     assert.ok(!patch.includes(extension), `Patch should omit ${extension}`);
   }
+
+  assert.ok(core.includes("cursor-composer-core-profile"));
+  assert.ok(connected.includes("cursor-composer-connected-profile"));
+  assert.ok(builder.includes("cursor-composer-core-profile"));
 });
 
 
@@ -187,6 +209,12 @@ test("package includes non-iOS Multica agent bundle loader profiles", async () =
     const status = await readFile(new URL(`../bundles/${slug}/extensions/status.ts`, import.meta.url), "utf8");
     const index = await readFile(new URL(`../bundles/${slug}/extensions/index.ts`, import.meta.url), "utf8");
     const cursorLoader = await readFile(new URL("../shared/extensions/load-cursor-sdk.mjs", import.meta.url), "utf8");
+    const coreProfile = slug.startsWith("cursor-composer")
+      ? await readFile(new URL("../shared/extensions/cursor-composer-core-profile.ts", import.meta.url), "utf8")
+      : "";
+    const connectedProfile = slug === "cursor-composer-connected"
+      ? await readFile(new URL("../shared/extensions/cursor-composer-connected-profile.ts", import.meta.url), "utf8")
+      : "";
 
     assert.match(readme, new RegExp(String.raw`Bundle slug: \`${slug}\``));
     assert.match(readme, new RegExp(String.raw`--no-extensions`));
@@ -195,18 +223,19 @@ test("package includes non-iOS Multica agent bundle loader profiles", async () =
     assert.ok(!readme.includes("-e C:/"));
     assert.ok(!readme.includes("-e git:"));
     assert.match(status, new RegExp(`${slug}:bundle-status`));
-    assert.ok(index.includes("pi-model-fallback"), `${slug} should include model fallback`);
-    assert.ok(index.includes("seed-model-fallback"), `${slug} should seed fallback config`);
+    const bundleSource = `${index}\n${coreProfile}\n${connectedProfile}`;
+    assert.ok(bundleSource.includes("pi-model-fallback"), `${slug} should include model fallback`);
+    assert.ok(bundleSource.includes("seed-model-fallback"), `${slug} should seed fallback config`);
     if (controllerBundlesWithoutSpine.has(slug)) {
-      assert.ok(!index.includes("pi-multica-spine"), `${slug} should not include work-agent spine`);
+      assert.ok(!bundleSource.includes("pi-multica-spine"), `${slug} should not include work-agent spine`);
     } else {
-      assert.ok(index.includes("pi-multica-spine"), `${slug} should include Multica spine`);
+      assert.ok(bundleSource.includes("pi-multica-spine"), `${slug} should include Multica spine`);
     }
     assert.ok(loader.includes(`"${slug}"`), `${slug} should be registered in the bundle loader`);
 
     const profile = genericExtensionProfiles[slug];
     if (!profile) continue;
-    const profileSource = `${index}\n${cursorLoader}`;
+    const profileSource = `${bundleSource}\n${cursorLoader}`;
     for (const needle of profile.includes) {
       assert.ok(profileSource.includes(needle), `${slug} should include ${needle}`);
     }
