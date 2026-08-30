@@ -52,6 +52,10 @@ const iosBundleSlugs = [
 
 const allBundleSlugs = [...genericBundleSlugs, ...iosBundleSlugs];
 
+const controllerBundlesWithoutSpine = new Set([
+  "pi-ace-turbo",
+]);
+
 const genericExtensionProfiles = {
   "cursor-composer-builder": {
     includes: ["pi-mcp-adapter", "context-mode", "pi-cursor-embedded-compat", "pi-cursor-sdk"],
@@ -183,7 +187,11 @@ test("package includes non-iOS Multica agent bundle loader profiles", async () =
     assert.match(status, new RegExp(`${slug}:bundle-status`));
     assert.ok(index.includes("pi-model-fallback"), `${slug} should include model fallback`);
     assert.ok(index.includes("seed-model-fallback"), `${slug} should seed fallback config`);
-    assert.ok(index.includes("pi-multica-spine"), `${slug} should include Multica spine`);
+    if (controllerBundlesWithoutSpine.has(slug)) {
+      assert.ok(!index.includes("pi-multica-spine"), `${slug} should not include work-agent spine`);
+    } else {
+      assert.ok(index.includes("pi-multica-spine"), `${slug} should include Multica spine`);
+    }
     assert.ok(loader.includes(`"${slug}"`), `${slug} should be registered in the bundle loader`);
 
     const profile = genericExtensionProfiles[slug];
