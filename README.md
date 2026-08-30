@@ -20,13 +20,21 @@ pi install git:github.com/eiei114/pi-agent-bundles -l
 
 ## Auto-sync latest release tag
 
-`agent-bundle-loader` now resolves the newest `v*` release tag and checks out that tag before loading a bundle.
+`agent-bundle-loader` resolves the newest `v*` release tag, validates it in an isolated git worktree under `.bundle-releases/<commit>/`, and only then updates the active release pointer. The executing Pi install checkout is never checked out or mutated during activation.
 
 - Default: sync at most once every 30 minutes (`PI_AGENT_BUNDLES_SYNC_MINUTES`)
-- Disable: `PI_AGENT_BUNDLES_SYNC=0`
+- Disable: `PI_AGENT_BUNDLES_SYNC=0` (loads bundles from the installed checkout for local development)
 - Force every run: `PI_AGENT_BUNDLES_SYNC=always`
-- If `package-lock.json` changes after sync, `npm install` may run at most once every 6 hours (`PI_AGENT_BUNDLES_NPM_MINUTES`)
-- Local uncommitted changes in the checkout skip auto-sync instead of overwriting your work
+- Activation stages the release in a versioned release root, runs `npm ci` and smoke there, then atomically updates `.bundle-git-sync.json`
+- Runtime bundle imports come from the verified release root with a cache-busted `bundleCommit` query parameter
+- Failed validation keeps the previous verified release pointer and never loads the candidate
+- Concurrent activations are serialized with an exclusive lock (`.bundle-activation.lock`) that records pid/start time, refreshes heartbeat during long validation, and expires only when the owner is gone or heartbeat is stale
+- Upgrading from `v0.8.3` or earlier: the first run can bootstrap from the installed checkout when HEAD matches an exact `v*` tag, `node_modules` is present, dependency smoke passes, and the working tree is clean except for an explicitly tolerated `package-lock.json`-only mutation; otherwise run with `PI_AGENT_BUNDLES_SYNC=always` once to prewarm a verified release root before strict loading applies
+
+### Cursor Composer Core vs Connected rollout
+
+- `cursor-composer-builder` intentionally remains Core-compatible for the first rollout.
+- Moving live Multica agents from Builder/Core to `cursor-composer-connected` is a **breaking rollout**: Connected adds MCP and smart-fetch extensions that Core omits. Schedule agent-by-agent migration and keep Builder/Core available for rollback until Connected is verified in production.
 
 ## Bundled existing extensions
 
@@ -84,6 +92,8 @@ Each bundle has its own `bundles/<slug>/README.md` and unique `/<slug>:bundle-st
 - `pi-extension-research-scout`
 - `pi-glm-builder`
 - `cursor-composer-builder`
+- `cursor-composer-core`
+- `cursor-composer-connected`
 - `cursor-patch-runner`
 - `codex-spark-patch-runner`
 - `codex-release-engineer`

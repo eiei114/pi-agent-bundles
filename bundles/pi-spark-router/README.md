@@ -24,5 +24,6 @@ Use the installed Git package checkout:
 ## Rules
 
 - Do not store secrets in this bundle.
+- Do not load `pi-multica-spine`; it is reserved for PR-producing work agents.
 - Seed config only when missing; never overwrite human-edited config.
 - Keep command names prefixed with `pi-spark-router` to avoid global command collisions.

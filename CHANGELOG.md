@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+- Activate bundle releases immutably: validate each tag in `.bundle-releases/<commit>/`, update only the active release pointer, and import role bundles from the verified root with cache-busted dynamic imports.
+- Serialize activation with an exclusive lock file that records pid/start time, refreshes heartbeat during validation, and reclaims only when the owner is gone or heartbeat is stale.
+- Verified release markers bind commit and `package-lock.json` hash and require `node_modules` installation evidence before fast-path reuse.
+- Preserve validated release roots when pointer persistence fails so a later sync can retry cheaply.
+- Document `v0.8.3` bootstrap/prewarm behavior for first activation after upgrading from checkout-mutating releases.
+- Load selected role bundles with dynamic import only after auto-sync completes to avoid stale in-memory module activation.
+- Split Cursor Composer into Core and Connected profiles; keep `cursor-composer-builder` Core-compatible and document Connected migration as a breaking rollout requirement.
+- Remove work-agent-only `pi-multica-spine` from Pi Ace Balanced, Pi Spark Router, and Pi Spark Scout controller bundles.
 - Remove research-only smart fetch and MCP adapter extensions from the Cursor Patch Runner bundle.
 - Add a pre-install Cursor dependency contract check and block incompatible protobuf/Connect major-version noise until the SDK contract changes.
 - Remove work-agent-only `pi-multica-spine` from the Pi Ace Turbo controller bundle.

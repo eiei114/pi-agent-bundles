@@ -4,7 +4,7 @@ Bundle slug: `cursor-composer-builder`
 
 ## Purpose
 
-Cursor implementation role for bounded but ambiguous build tasks.
+Cursor implementation role for bounded but ambiguous build tasks. This slug remains Core-compatible and loads the same local coding profile as `cursor-composer-core`.
 
 ## Resources
 
@@ -28,3 +28,4 @@ Use the installed Git package checkout, matching the iOS agent bundle pattern:
 - Keep the exact-pinned Cursor dependency graph and do not reintroduce the OAuth provider.
 - Seed config only when missing; never overwrite human-edited config.
 - Keep command names prefixed with `cursor-composer-builder` to avoid global command collisions.
+- Breaking rollout note: production agents that need MCP/smart-fetch should migrate to `cursor-composer-connected` deliberately; this slug stays Core-compatible until that migration is scheduled.
