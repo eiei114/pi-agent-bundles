@@ -19,5 +19,6 @@ jobs:
         with:
           node-version: 24
           cache: npm
+      - run: node scripts/check-cursor-dependency-contract.mjs
       - run: npm ci
       - run: npm run ci

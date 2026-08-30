@@ -24,6 +24,15 @@ updates:
       - "*"
     multi-ecosystem-group: all-dependencies
     open-pull-requests-limit: 1
+    # Cursor SDK 1.0.23 and Connect 1.7 require protobuf 1.x. Upgrade this
+    # dependency graph together after the SDK raises its contract.
+    ignore:
+      - dependency-name: "@bufbuild/protobuf"
+        update-types:
+          - "version-update:semver-major"
+      - dependency-name: "@connectrpc/connect"
+        update-types:
+          - "version-update:semver-major"
 
   - package-ecosystem: github-actions
     directory: "/"

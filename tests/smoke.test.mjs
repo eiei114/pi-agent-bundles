@@ -62,8 +62,8 @@ const genericExtensionProfiles = {
     excludes: ["@howaboua/pi-codex-conversion"],
   },
   "cursor-patch-runner": {
-    includes: ["pi-mcp-adapter", "context-mode", "pi-cursor-embedded-compat", "pi-cursor-sdk"],
-    excludes: ["@howaboua/pi-codex-conversion"],
+    includes: ["context-mode", "pi-cursor-embedded-compat", "pi-cursor-sdk"],
+    excludes: ["pi-smart-fetch", "pi-mcp-adapter", "@howaboua/pi-codex-conversion"],
   },
   "codex-release-engineer": {
     includes: ["pi-mcp-adapter", "context-mode", "@howaboua/pi-codex-conversion"],
@@ -147,6 +147,16 @@ test("Cursor compatibility shim loads before the singleton SDK", async () => {
   const loader = await readFile(new URL("../shared/extensions/load-cursor-sdk.mjs", import.meta.url), "utf8");
   assert.ok(loader.indexOf("pi-cursor-embedded-compat") < loader.indexOf("pi-cursor-sdk"));
   assert.ok(!loader.includes("@offbynan/pi-cursor-provider"));
+});
+
+test("Cursor Patch keeps a smaller extension surface than Composer", async () => {
+  const composer = await readFile(new URL("../bundles/cursor-composer-builder/extensions/index.ts", import.meta.url), "utf8");
+  const patch = await readFile(new URL("../bundles/cursor-patch-runner/extensions/index.ts", import.meta.url), "utf8");
+
+  for (const extension of ["pi-smart-fetch", "pi-mcp-adapter"]) {
+    assert.ok(composer.includes(extension), `Composer should retain ${extension}`);
+    assert.ok(!patch.includes(extension), `Patch should omit ${extension}`);
+  }
 });
 
 
