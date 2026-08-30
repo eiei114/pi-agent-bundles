@@ -1,6 +1,6 @@
 {
   "name": "pi-agent-bundles",
-  "version": "0.8.1",
+  "version": "0.8.2",
   "private": true,
   "description": "Git-distributed Pi agent bundles for Multica and project-specific runtime defaults.",
   "type": "module",
@@ -30,9 +30,10 @@
     "CHANGELOG.md"
   ],
   "scripts": {
+    "check:cursor-deps": "node scripts/check-cursor-dependency-contract.mjs",
     "typecheck": "tsc --noEmit",
     "test": "node --test tests/*.test.mjs",
-    "ci": "npm run typecheck && npm test",
+    "ci": "npm run check:cursor-deps && npm run typecheck && npm test",
     "pack:check": "npm pack --dry-run"
   },
   "pi": {
