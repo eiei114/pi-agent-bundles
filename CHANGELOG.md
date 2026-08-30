@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Remove model-fallback loading and fallback seeding from Pi Spark Scout so provider failure stops for explicit routing instead of silently spending another model lane.
 - Activate bundle releases immutably: validate each tag in `.bundle-releases/<commit>/`, update only the active release pointer, and import role bundles from the verified root with cache-busted dynamic imports.
 - Serialize activation with an exclusive lock file that records pid/start time, refreshes heartbeat during validation, and reclaims only when the owner is gone or heartbeat is stale.
 - Verified release markers bind commit and `package-lock.json` hash and require `node_modules` installation evidence before fast-path reuse.

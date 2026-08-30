@@ -61,6 +61,8 @@ const controllerBundlesWithoutSpine = new Set([
   "pi-spark-scout",
 ]);
 
+const bundlesWithoutModelFallback = new Set(["pi-spark-scout"]);
+
 const genericExtensionProfiles = {
   "cursor-composer-builder": {
     includes: ["context-mode", "pi-cursor-embedded-compat", "pi-cursor-sdk", "pi-multica-spine"],
@@ -224,8 +226,13 @@ test("package includes non-iOS Multica agent bundle loader profiles", async () =
     assert.ok(!readme.includes("-e git:"));
     assert.match(status, new RegExp(`${slug}:bundle-status`));
     const bundleSource = `${index}\n${coreProfile}\n${connectedProfile}`;
-    assert.ok(bundleSource.includes("pi-model-fallback"), `${slug} should include model fallback`);
-    assert.ok(bundleSource.includes("seed-model-fallback"), `${slug} should seed fallback config`);
+    if (bundlesWithoutModelFallback.has(slug)) {
+      assert.ok(!bundleSource.includes("pi-model-fallback"), `${slug} should fail closed without model fallback`);
+      assert.ok(!bundleSource.includes("seed-model-fallback"), `${slug} should not seed fallback config`);
+    } else {
+      assert.ok(bundleSource.includes("pi-model-fallback"), `${slug} should include model fallback`);
+      assert.ok(bundleSource.includes("seed-model-fallback"), `${slug} should seed fallback config`);
+    }
     if (controllerBundlesWithoutSpine.has(slug)) {
       assert.ok(!bundleSource.includes("pi-multica-spine"), `${slug} should not include work-agent spine`);
     } else {
