@@ -21,7 +21,10 @@ test("bundle git sync hardens tag validation, worktree cleanup, and command time
   assert.match(source, /isValidGitRefname/);
   assert.match(source, /worktree", "prune"/);
   assert.match(source, /pruneWorktrees\(\)/);
-  assert.match(source, /renameSync\(stagingDir, releaseRoot\)/);
+  assert.match(source, /worktree", "move"/);
+  assert.match(source, /promoteStagingWorktree/);
+  assert.match(source, /removeReleaseWorktree/);
+  assert.match(source, /worktree", "remove", "--force"/);
   assert.match(source, /taskkill/);
   assert.match(source, /TIMEOUT_SETTLE_MS/);
   assert.match(source, /shell: false/);
@@ -45,7 +48,10 @@ test("bundle git sync uses versioned release roots instead of checkout mutation"
   assert.match(source, /stagingDirForPid/);
   assert.doesNotMatch(source, /rollback:/);
   assert.doesNotMatch(source, /rollbackToKnownGood/);
-  assert.equal((source.match(/rmSync\(releaseRoot/g) ?? []).length, 1);
+  assert.doesNotMatch(source, /renameSync\(stagingDir, releaseRoot\)/);
+  assert.match(source, /resolveNpmCliPath/);
+  assert.match(source, /process\.execPath/);
+  assert.match(source, /npm-cli\.js/);
 });
 
 test("agent bundle loader syncs before verified dynamic bundle import", () => {

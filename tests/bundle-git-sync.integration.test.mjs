@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { join, dirname, resolve } from "node:path";
 import test from "node:test";
 
 const repoRoot = new URL("../", import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, "$1");
@@ -310,6 +310,149 @@ test("integration: pointer write failure returns without throwing on fallback pe
 
     assert.equal(result.ok, false);
     assert.match(result.error ?? "", /Failed to persist active release pointer|EISDIR|ENOTDIR|EPERM/);
+  } finally {
+    delete process.env.PI_AGENT_BUNDLES_TEST_ROOT;
+    rmSync(testRoot, { recursive: true, force: true });
+  }
+});
+
+test("bundle git sync resolves npm via node execPath and validated npm-cli.js", async () => {
+  const testRoot = mkdtempSync(join(tmpdir(), "bundle-sync-npm-"));
+  try {
+    const internals = await loadInternals(testRoot);
+    const invocation = internals.resolveNpmInvocation(["--version"]);
+    assert.equal(invocation.command, process.execPath);
+    assert.ok(invocation.args.length >= 2);
+    assert.match(invocation.args[0], /npm-cli\.js$/);
+    assert.equal(invocation.args[1], "--version");
+
+    const { spawnSync } = await import("node:child_process");
+    const smoke = spawnSync(invocation.command, invocation.args, {
+      cwd: testRoot,
+      encoding: "utf8",
+      shell: false,
+    });
+    assert.equal(smoke.status, 0, trimOutput(smoke.stderr || smoke.stdout));
+    assert.match(trimOutput(smoke.stdout), /^\d+\.\d+\.\d+/);
+  } finally {
+    delete process.env.PI_AGENT_BUNDLES_TEST_ROOT;
+    rmSync(testRoot, { recursive: true, force: true });
+  }
+});
+
+test(`integration: npm_execpath candidate wins on ${process.platform}`, async () => {
+  const testRoot = mkdtempSync(join(tmpdir(), "bundle-sync-npm-execpath-"));
+  const fakeCli = resolve(testRoot, "npm-cli.js");
+  try {
+    mkdirSync(testRoot, { recursive: true });
+    writeFileSync(fakeCli, "console.log('9.9.9-test');\n", "utf8");
+    process.env.npm_execpath = fakeCli;
+
+    const internals = await loadInternals(testRoot);
+    assert.equal(internals.resolveNpmCliPath(), resolve(fakeCli));
+
+    const invocation = internals.resolveNpmInvocation(["--version"]);
+    assert.equal(invocation.command, process.execPath);
+    assert.equal(invocation.args[0], resolve(fakeCli));
+
+    const { spawnSync } = await import("node:child_process");
+    const smoke = spawnSync(invocation.command, invocation.args, {
+      cwd: testRoot,
+      encoding: "utf8",
+      shell: false,
+    });
+    assert.equal(smoke.status, 0);
+    assert.match(trimOutput(smoke.stdout), /9\.9\.9-test/);
+  } finally {
+    delete process.env.PI_AGENT_BUNDLES_TEST_ROOT;
+    delete process.env.npm_execpath;
+    rmSync(testRoot, { recursive: true, force: true });
+  }
+});
+
+function trimOutput(value) {
+  return (value ?? "").trim();
+}
+
+test("integration: promote staging via git worktree move survives prune and re-open", async () => {
+  const testRoot = mkdtempSync(join(tmpdir(), "bundle-sync-worktree-move-"));
+  try {
+    mkdirSync(testRoot, { recursive: true });
+    writeFileSync(join(testRoot, "README.md"), "seed\n", "utf8");
+
+    const { spawnSync } = await import("node:child_process");
+    const runGitLocal = (args) => spawnSync("git", args, { cwd: testRoot, encoding: "utf8", shell: false });
+
+    assert.equal(runGitLocal(["init", "-b", "main"]).status, 0);
+    assert.equal(runGitLocal(["config", "user.email", "test@example.com"]).status, 0);
+    assert.equal(runGitLocal(["config", "user.name", "Test"]).status, 0);
+    assert.equal(runGitLocal(["add", "README.md"]).status, 0);
+    assert.equal(runGitLocal(["commit", "-m", "seed"]).status, 0);
+    assert.equal(runGitLocal(["tag", "v0.0.1"]).status, 0);
+
+    const commit = trimOutput(runGitLocal(["rev-parse", "HEAD"]).stdout);
+    const internals = await loadInternals(testRoot);
+    const stagingDir = internals.stagingDirForPid();
+    mkdirSync(dirname(stagingDir), { recursive: true });
+
+    const add = runGitLocal(["worktree", "add", "--detach", stagingDir, "v0.0.1"]);
+    assert.equal(add.status, 0, trimOutput(add.stderr || add.stdout));
+
+    const releaseRoot = join(internals.RELEASES_DIR, commit);
+    const promoted = internals.promoteStagingWorktree(stagingDir, releaseRoot);
+    assert.equal(promoted.ok, true, promoted.error);
+
+    const statusBefore = runGitLocal(["-C", releaseRoot, "status", "--porcelain"]);
+    assert.equal(statusBefore.status, 0, trimOutput(statusBefore.stderr || statusBefore.stdout));
+    assert.equal(existsSync(join(releaseRoot, ".git")), true);
+
+    internals.pruneWorktrees();
+
+    const statusAfter = runGitLocal(["-C", releaseRoot, "status", "--porcelain"]);
+    assert.equal(statusAfter.status, 0, trimOutput(statusAfter.stderr || statusAfter.stdout));
+    assert.equal(existsSync(join(releaseRoot, ".git")), true);
+    assert.equal(trimOutput(runGitLocal(["-C", releaseRoot, "rev-parse", "HEAD"]).stdout), commit);
+  } finally {
+    delete process.env.PI_AGENT_BUNDLES_TEST_ROOT;
+    rmSync(testRoot, { recursive: true, force: true });
+  }
+});
+
+test("integration: invalid existing release cleanup uses worktree-aware removal", async () => {
+  const testRoot = mkdtempSync(join(tmpdir(), "bundle-sync-release-cleanup-"));
+  try {
+    mkdirSync(testRoot, { recursive: true });
+    writeFileSync(join(testRoot, "README.md"), "seed\n", "utf8");
+
+    const { spawnSync } = await import("node:child_process");
+    const runGitLocal = (args) => spawnSync("git", args, { cwd: testRoot, encoding: "utf8", shell: false });
+
+    assert.equal(runGitLocal(["init", "-b", "main"]).status, 0);
+    assert.equal(runGitLocal(["config", "user.email", "test@example.com"]).status, 0);
+    assert.equal(runGitLocal(["config", "user.name", "Test"]).status, 0);
+    assert.equal(runGitLocal(["add", "README.md"]).status, 0);
+    assert.equal(runGitLocal(["commit", "-m", "seed"]).status, 0);
+    assert.equal(runGitLocal(["tag", "v0.0.1"]).status, 0);
+
+    const commit = trimOutput(runGitLocal(["rev-parse", "HEAD"]).stdout);
+    const internals = await loadInternals(testRoot);
+    const stagingDir = internals.stagingDirForPid();
+    const releaseRoot = join(internals.RELEASES_DIR, commit);
+    mkdirSync(dirname(stagingDir), { recursive: true });
+
+    assert.equal(runGitLocal(["worktree", "add", "--detach", stagingDir, "v0.0.1"]).status, 0);
+    assert.equal(internals.promoteStagingWorktree(stagingDir, releaseRoot).ok, true);
+
+    const stagingDir2 = join(internals.RELEASES_DIR, `.staging.${process.pid}.retry`);
+    assert.equal(runGitLocal(["worktree", "add", "--detach", stagingDir2, "v0.0.1"]).status, 0);
+
+    writeFileSync(join(releaseRoot, "stale.txt"), "stale\n", "utf8");
+    const repromoted = internals.promoteStagingWorktree(stagingDir2, releaseRoot);
+    assert.equal(repromoted.ok, true, repromoted.error);
+    assert.equal(existsSync(join(releaseRoot, "stale.txt")), false);
+
+    const status = runGitLocal(["-C", releaseRoot, "status", "--porcelain"]);
+    assert.equal(status.status, 0);
   } finally {
     delete process.env.PI_AGENT_BUNDLES_TEST_ROOT;
     rmSync(testRoot, { recursive: true, force: true });

@@ -8,7 +8,7 @@ import {
   rmSync,
   writeFileSync,
 } from "node:fs";
-import { dirname, join, resolve } from "node:path";
+import { dirname, isAbsolute, join, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
 type SyncState = {
@@ -393,11 +393,25 @@ async function activateVerifiedRelease(input: ActivateVerifiedReleaseInput): Pro
   const releaseRoot = releaseRootForCommit(latestCommit);
   mkdirSync(RELEASES_DIR, { recursive: true });
 
-  if (existsSync(releaseRoot)) {
-    rmSync(releaseRoot, { recursive: true, force: true });
+  const promoted = promoteStagingWorktree(stagingDir, releaseRoot);
+  if (!promoted.ok) {
+    const error = promoted.error ?? "Failed to promote activation staging worktree";
+    writeState({
+      ...state,
+      lastError: error,
+      lastActivationFailure: error,
+    });
+    return {
+      attempted: true,
+      updated: false,
+      npmInstalled: true,
+      error,
+      tag: knownGoodTag,
+      commit: knownGoodCommit ?? active.commit,
+      releaseRoot: knownGoodRoot ?? active.root,
+    };
   }
-  renameSync(stagingDir, releaseRoot);
-  pruneWorktrees();
+
   writeVerifiedReleaseMarker(releaseRoot, latestCommit, latestTag);
 
   const pointer = commitActiveRelease(state, {
@@ -517,6 +531,67 @@ function pruneWorktrees(): void {
   runGit(["worktree", "prune"], REPO_ROOT);
 }
 
+function removeReleaseWorktree(releaseRoot: string): void {
+  if (!existsSync(releaseRoot)) return;
+
+  runGit(["worktree", "remove", "--force", releaseRoot], REPO_ROOT);
+  if (existsSync(releaseRoot)) {
+    rmSync(releaseRoot, { recursive: true, force: true });
+  }
+  pruneWorktrees();
+}
+
+function promoteStagingWorktree(
+  stagingDir: string,
+  releaseRoot: string,
+): { ok: boolean; error?: string } {
+  if (existsSync(releaseRoot)) {
+    removeReleaseWorktree(releaseRoot);
+  }
+
+  const move = runGit(["worktree", "move", stagingDir, releaseRoot], REPO_ROOT);
+  if (move.status !== 0) {
+    return {
+      ok: false,
+      error: trimOutput(move.stderr || move.stdout) || "git worktree move failed",
+    };
+  }
+
+  pruneWorktrees();
+  return { ok: true };
+}
+
+function resolveNpmCliPath(): string {
+  const candidates: string[] = [];
+
+  const npmExecpath = process.env.npm_execpath?.trim();
+  if (npmExecpath && isAbsolute(npmExecpath) && existsSync(npmExecpath)) {
+    candidates.push(resolve(npmExecpath));
+  }
+
+  candidates.push(
+    resolve(dirname(process.execPath), "node_modules", "npm", "bin", "npm-cli.js"),
+  );
+
+  for (const candidate of candidates) {
+    if (existsSync(candidate)) {
+      return candidate;
+    }
+  }
+
+  throw new Error(
+    "npm CLI unavailable: no validated absolute npm-cli.js candidate (npm_execpath or node_modules/npm/bin/npm-cli.js)",
+  );
+}
+
+function resolveNpmInvocation(npmArgs: string[]): { command: string; args: string[] } {
+  const npmCli = resolveNpmCliPath();
+  return {
+    command: process.execPath,
+    args: [npmCli, ...npmArgs],
+  };
+}
+
 function releaseRootForCommit(commit: string): string {
   return join(RELEASES_DIR, commit);
 }
@@ -566,7 +641,17 @@ function hasNodeModulesEvidence(releaseRoot: string): boolean {
 }
 
 async function runActivationSmoke(cwd: string): Promise<{ ok: boolean; error?: string }> {
-  return runCommandWithLockHeartbeat("npm", ["run", "ci"], {
+  let invocation: { command: string; args: string[] };
+  try {
+    invocation = resolveNpmInvocation(["run", "ci"]);
+  } catch (error) {
+    return {
+      ok: false,
+      error: error instanceof Error ? error.message : "npm CLI unavailable",
+    };
+  }
+
+  return runCommandWithLockHeartbeat(invocation.command, invocation.args, {
     cwd,
     timeoutMs: ACTIVATION_SMOKE_TIMEOUT_MS,
     failureMessage: "npm run ci failed during activation smoke",
@@ -574,7 +659,17 @@ async function runActivationSmoke(cwd: string): Promise<{ ok: boolean; error?: s
 }
 
 async function runNpmCi(cwd: string): Promise<{ ok: boolean; error?: string }> {
-  return runCommandWithLockHeartbeat("npm", ["ci", "--no-audit", "--no-fund"], {
+  let invocation: { command: string; args: string[] };
+  try {
+    invocation = resolveNpmInvocation(["ci", "--no-audit", "--no-fund"]);
+  } catch (error) {
+    return {
+      ok: false,
+      error: error instanceof Error ? error.message : "npm CLI unavailable",
+    };
+  }
+
+  return runCommandWithLockHeartbeat(invocation.command, invocation.args, {
     cwd,
     timeoutMs: NPM_CI_TIMEOUT_MS,
     failureMessage: "npm ci failed",
@@ -919,7 +1014,17 @@ function isCleanEnoughForBootstrap(): boolean {
 }
 
 function runBootstrapDependencySmoke(): { ok: boolean; error?: string } {
-  const npm = spawnSync("npm", ["run", "check:cursor-deps"], {
+  let invocation: { command: string; args: string[] };
+  try {
+    invocation = resolveNpmInvocation(["run", "check:cursor-deps"]);
+  } catch (error) {
+    return {
+      ok: false,
+      error: error instanceof Error ? error.message : "npm CLI unavailable",
+    };
+  }
+
+  const npm = spawnSync(invocation.command, invocation.args, {
     cwd: REPO_ROOT,
     encoding: "utf8",
     shell: false,
@@ -974,4 +1079,9 @@ export const bundleGitSyncInternals = {
   isValidGitRefname,
   runCommandWithLockHeartbeat,
   pruneWorktrees,
+  promoteStagingWorktree,
+  removeReleaseWorktree,
+  resolveNpmCliPath,
+  resolveNpmInvocation,
+  prepareStagingWorktree,
 };
