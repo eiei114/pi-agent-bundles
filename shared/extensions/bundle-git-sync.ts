@@ -73,6 +73,11 @@ const LOCK_TTL_MS = Math.max(
   NPM_CI_TIMEOUT_MS + ACTIVATION_SMOKE_TIMEOUT_MS + 5 * 60 * 1000,
 );
 const TAG_PREFIX = process.env.PI_AGENT_BUNDLES_TAG_PREFIX?.trim() || "v";
+const KILL_ESCALATION_MS = 10_000;
+const TIMEOUT_SETTLE_MS = 30_000;
+const GIT_SHA1_RE = /^[0-9a-f]{40}$/;
+const RELEASE_SEMVER_RE = /^(\d+)\.(\d+)\.(\d+)(-[0-9A-Za-z.-]+)?(\+[0-9A-Za-z.-]+)?$/;
+const UNSAFE_REF_CHARS_RE = /[\x00-\x1f\x7f ~^:?*[\\]/;
 
 export function getActiveRelease(): ActiveRelease {
   const state = normalizeState(readState());
@@ -183,9 +188,37 @@ export async function syncBundleGitCheckout(): Promise<BundleGitSyncResult> {
     };
   }
 
+  if (!isValidReleaseTag(latestTag)) {
+    const error = `Rejected unsafe or invalid release tag: ${latestTag}`;
+    writeState({ ...state, lastError: error });
+    return {
+      attempted: true,
+      updated: false,
+      npmInstalled: false,
+      error,
+      commit: active.commit,
+      tag: knownGoodTag,
+      releaseRoot: active.root,
+    };
+  }
+
   const latestCommit = resolveTagCommit(latestTag);
   if (!latestCommit) {
     const error = `Could not resolve commit for tag ${latestTag}`;
+    writeState({ ...state, lastError: error });
+    return {
+      attempted: true,
+      updated: false,
+      npmInstalled: false,
+      error,
+      tag: knownGoodTag,
+      commit: active.commit,
+      releaseRoot: active.root,
+    };
+  }
+
+  if (!isValidCommitHash(latestCommit)) {
+    const error = `Rejected unsafe commit hash for tag ${latestTag}`;
     writeState({ ...state, lastError: error });
     return {
       attempted: true,
@@ -364,6 +397,7 @@ async function activateVerifiedRelease(input: ActivateVerifiedReleaseInput): Pro
     rmSync(releaseRoot, { recursive: true, force: true });
   }
   renameSync(stagingDir, releaseRoot);
+  pruneWorktrees();
   writeVerifiedReleaseMarker(releaseRoot, latestCommit, latestTag);
 
   const pointer = commitActiveRelease(state, {
@@ -422,11 +456,15 @@ function commitActiveRelease(
     return { ok: true, updated: changed };
   } catch (error) {
     const message = error instanceof Error ? error.message : "Failed to persist active release pointer";
-    writeState({
-      ...previous,
-      lastError: message,
-      lastActivationFailure: message,
-    });
+    try {
+      writeState({
+        ...previous,
+        lastError: message,
+        lastActivationFailure: message,
+      });
+    } catch {
+      // State persistence is unavailable; keep the previous on-disk pointer.
+    }
     return { ok: false, updated: false, error: message };
   }
 }
@@ -463,12 +501,20 @@ function prepareStagingWorktree(
 }
 
 function removeStagingWorktree(stagingDir: string = stagingDirForPid()): void {
-  if (!existsSync(stagingDir)) return;
+  if (!existsSync(stagingDir)) {
+    pruneWorktrees();
+    return;
+  }
 
   runGit(["worktree", "remove", "--force", stagingDir], REPO_ROOT);
   if (existsSync(stagingDir)) {
     rmSync(stagingDir, { recursive: true, force: true });
   }
+  pruneWorktrees();
+}
+
+function pruneWorktrees(): void {
+  runGit(["worktree", "prune"], REPO_ROOT);
 }
 
 function releaseRootForCommit(commit: string): string {
@@ -542,15 +588,32 @@ async function runCommandWithLockHeartbeat(
 ): Promise<{ ok: boolean; error?: string }> {
   refreshActivationLockHeartbeat();
 
-  return new Promise((resolve) => {
+  return new Promise((resolvePromise) => {
     const child: ChildProcess = spawn(command, args, {
       cwd: input.cwd,
-      shell: process.platform === "win32",
+      shell: false,
       stdio: ["ignore", "pipe", "pipe"],
     });
 
     let stdout = "";
     let stderr = "";
+    let settled = false;
+    let timedOut = false;
+    let heartbeat: NodeJS.Timeout | undefined;
+    let timeout: NodeJS.Timeout | undefined;
+    let killEscalation: NodeJS.Timeout | undefined;
+    let settleTimeout: NodeJS.Timeout | undefined;
+
+    const finish = (result: { ok: boolean; error?: string }) => {
+      if (settled) return;
+      settled = true;
+      if (heartbeat) clearInterval(heartbeat);
+      if (timeout) clearTimeout(timeout);
+      if (killEscalation) clearTimeout(killEscalation);
+      if (settleTimeout) clearTimeout(settleTimeout);
+      resolvePromise(result);
+    };
+
     child.stdout?.on("data", (chunk) => {
       stdout += chunk.toString();
     });
@@ -558,37 +621,65 @@ async function runCommandWithLockHeartbeat(
       stderr += chunk.toString();
     });
 
-    const heartbeat = setInterval(() => {
+    heartbeat = setInterval(() => {
       refreshActivationLockHeartbeat();
     }, LOCK_HEARTBEAT_INTERVAL_MS);
 
-    const timeout = setTimeout(() => {
-      child.kill("SIGTERM");
+    timeout = setTimeout(() => {
+      timedOut = true;
+      killProcessTree(child, false);
+      killEscalation = setTimeout(() => {
+        if (child.exitCode === null && child.signalCode === null) {
+          killProcessTree(child, true);
+        }
+      }, KILL_ESCALATION_MS);
+      killEscalation.unref?.();
+      settleTimeout = setTimeout(() => {
+        finish({
+          ok: false,
+          error: `${input.failureMessage} (timed out after ${input.timeoutMs}ms)`,
+        });
+      }, TIMEOUT_SETTLE_MS);
+      settleTimeout.unref?.();
     }, input.timeoutMs);
 
     child.on("close", (code) => {
-      clearInterval(heartbeat);
-      clearTimeout(timeout);
-      if (code === 0) {
+      if (code === 0 && !timedOut) {
         refreshActivationLockHeartbeat();
-        resolve({ ok: true });
+        finish({ ok: true });
         return;
       }
-      resolve({
+      finish({
         ok: false,
-        error: trimOutput(stderr || stdout) || input.failureMessage,
+        error: timedOut
+          ? `${input.failureMessage} (timed out after ${input.timeoutMs}ms)`
+          : trimOutput(stderr || stdout) || input.failureMessage,
       });
     });
 
     child.on("error", (error) => {
-      clearInterval(heartbeat);
-      clearTimeout(timeout);
-      resolve({
+      finish({
         ok: false,
         error: error instanceof Error ? error.message : input.failureMessage,
       });
     });
   });
+}
+
+function killProcessTree(child: ChildProcess, force: boolean): void {
+  const pid = child.pid;
+  if (!pid) {
+    child.kill(force ? "SIGKILL" : "SIGTERM");
+    return;
+  }
+
+  if (process.platform === "win32") {
+    const args = force ? ["/PID", String(pid), "/T", "/F"] : ["/PID", String(pid), "/T"];
+    spawnSync("taskkill", args, { shell: false });
+    return;
+  }
+
+  child.kill(force ? "SIGKILL" : "SIGTERM");
 }
 
 function acquireActivationLock(): boolean {
@@ -720,7 +811,8 @@ function resolveLatestTag(): string | undefined {
   const tags = trimOutput(result.stdout)
     .split(/\r?\n/)
     .map((line) => line.trim())
-    .filter(Boolean);
+    .filter(Boolean)
+    .filter(isValidReleaseTag);
   return tags[0];
 }
 
@@ -736,9 +828,11 @@ function resolveCurrentTag(): string | undefined {
 }
 
 function resolveTagCommit(tag: string): string | undefined {
+  if (!isValidReleaseTag(tag)) return undefined;
   const result = runGit(["rev-parse", `${tag}^{commit}`]);
   if (result.status !== 0) return undefined;
-  return trimOutput(result.stdout);
+  const commit = trimOutput(result.stdout).toLowerCase();
+  return isValidCommitHash(commit) ? commit : undefined;
 }
 
 function readCurrentCommit(): string | undefined {
@@ -755,9 +849,33 @@ function runGit(args: string[], cwd: string = REPO_ROOT) {
   return spawnSync("git", args, {
     cwd,
     encoding: "utf8",
-    shell: process.platform === "win32",
+    shell: false,
     timeout: 2 * 60 * 1000,
   });
+}
+
+function isValidGitRefname(ref: string): boolean {
+  if (!ref || ref.length > 255) return false;
+  if (ref.endsWith(".") || ref.endsWith(".lock")) return false;
+  if (ref.includes("..") || ref.includes("@{") || ref.includes("//")) return false;
+  if (UNSAFE_REF_CHARS_RE.test(ref)) return false;
+
+  for (const segment of ref.split("/")) {
+    if (!segment || segment.startsWith(".") || segment.endsWith(".lock")) return false;
+    if (segment.endsWith(".")) return false;
+  }
+
+  return true;
+}
+
+function isValidReleaseTag(tag: string): boolean {
+  if (!isValidGitRefname(tag)) return false;
+  if (!tag.startsWith(TAG_PREFIX)) return false;
+  return RELEASE_SEMVER_RE.test(tag.slice(TAG_PREFIX.length));
+}
+
+function isValidCommitHash(commit: string): boolean {
+  return GIT_SHA1_RE.test(commit);
 }
 
 function resolvePackagedBootstrapRelease(): ActiveRelease | undefined {
@@ -804,7 +922,7 @@ function runBootstrapDependencySmoke(): { ok: boolean; error?: string } {
   const npm = spawnSync("npm", ["run", "check:cursor-deps"], {
     cwd: REPO_ROOT,
     encoding: "utf8",
-    shell: process.platform === "win32",
+    shell: false,
     timeout: 2 * 60 * 1000,
   });
   if (npm.status === 0) return { ok: true };
@@ -831,6 +949,8 @@ export const bundleGitSyncInternals = {
   LOCK_PATH,
   LOCK_TTL_MS,
   LOCK_HEARTBEAT_INTERVAL_MS,
+  KILL_ESCALATION_MS,
+  TIMEOUT_SETTLE_MS,
   activateVerifiedRelease,
   acquireActivationLock,
   releaseActivationLock,
@@ -849,4 +969,9 @@ export const bundleGitSyncInternals = {
   writeVerifiedReleaseMarker,
   resolvePackagedBootstrapRelease,
   hashFile,
+  isValidReleaseTag,
+  isValidCommitHash,
+  isValidGitRefname,
+  runCommandWithLockHeartbeat,
+  pruneWorktrees,
 };

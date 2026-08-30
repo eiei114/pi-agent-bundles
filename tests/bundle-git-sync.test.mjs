@@ -14,6 +14,21 @@ test("bundle git sync helper exists", () => {
   assert.match(source, /fetch", "--tags"/);
 });
 
+test("bundle git sync hardens tag validation, worktree cleanup, and command timeouts", () => {
+  const source = readFileSync(join(repoRoot, "shared/extensions/bundle-git-sync.ts"), "utf8");
+  assert.match(source, /isValidReleaseTag/);
+  assert.match(source, /isValidCommitHash/);
+  assert.match(source, /isValidGitRefname/);
+  assert.match(source, /worktree", "prune"/);
+  assert.match(source, /pruneWorktrees\(\)/);
+  assert.match(source, /renameSync\(stagingDir, releaseRoot\)/);
+  assert.match(source, /taskkill/);
+  assert.match(source, /TIMEOUT_SETTLE_MS/);
+  assert.match(source, /shell: false/);
+  assert.doesNotMatch(source, /shell: process\.platform === "win32"/);
+  assert.match(source, /State persistence is unavailable/);
+});
+
 test("bundle git sync uses versioned release roots instead of checkout mutation", () => {
   const source = readFileSync(join(repoRoot, "shared/extensions/bundle-git-sync.ts"), "utf8");
   assert.match(source, /worktree", "add"/);
@@ -41,9 +56,11 @@ test("agent bundle loader syncs before verified dynamic bundle import", () => {
   assert.match(source, /resolveBundleImportUrl\(/);
   assert.match(source, /await import\(importUrl\)/);
   assert.doesNotMatch(source, /^import .* from "\.\.\/\.\.\/bundles\//m);
+  const slugCheckIndex = source.indexOf("isKnownBundleSlug(slug)");
   const syncIndex = source.indexOf("syncBundleGitCheckout(");
   const loadIndex = source.indexOf("await import(importUrl)");
-  assert.ok(syncIndex >= 0 && loadIndex >= 0, "expected sync and dynamic load markers");
+  assert.ok(slugCheckIndex >= 0 && syncIndex >= 0 && loadIndex >= 0, "expected slug check, sync, and dynamic load markers");
+  assert.ok(slugCheckIndex < syncIndex, "slug validation must run before sync");
   assert.ok(syncIndex < loadIndex, "sync must run before dynamic bundle import");
 });
 

@@ -36,6 +36,10 @@ export default async function agentBundleLoader(pi: ExtensionAPI) {
   const slug = getBundleSlug();
   if (!slug) return;
 
+  if (!isKnownBundleSlug(slug)) {
+    throw new Error(`Unknown agent bundle '${slug}'. Known bundles: ${bundleSlugs.join(", ")}`);
+  }
+
   const sync = await syncBundleGitCheckout();
   if (sync.error) {
     pi.logger?.warn?.(`pi-agent-bundles auto-sync warning: ${sync.error}`);
@@ -43,10 +47,6 @@ export default async function agentBundleLoader(pi: ExtensionAPI) {
     pi.logger?.info?.(
       `pi-agent-bundles activated ${sync.commit ?? sync.tag ?? "release"} at ${sync.releaseRoot ?? "verified root"}`,
     );
-  }
-
-  if (!isKnownBundleSlug(slug)) {
-    throw new Error(`Unknown agent bundle '${slug}'. Known bundles: ${bundleSlugs.join(", ")}`);
   }
 
   const active = getActiveRelease();

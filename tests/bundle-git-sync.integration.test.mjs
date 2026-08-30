@@ -267,3 +267,84 @@ test("integration: verified root requires package-lock hash and node_modules evi
     rmSync(testRoot, { recursive: true, force: true });
   }
 });
+
+test("integration: release tag and commit validators reject unsafe values", async () => {
+  const testRoot = mkdtempSync(join(tmpdir(), "bundle-sync-validate-"));
+  try {
+    const internals = await loadInternals(testRoot);
+    assert.equal(internals.isValidReleaseTag("v1.2.3"), true);
+    assert.equal(internals.isValidReleaseTag("v1.2.3-beta.1"), true);
+    assert.equal(internals.isValidReleaseTag("v1.2.3; rm -rf /"), false);
+    assert.equal(internals.isValidReleaseTag("v1.2.3."), false);
+    assert.equal(internals.isValidReleaseTag("v1.2.3.lock"), false);
+    assert.equal(internals.isValidCommitHash("aaa1111111111111111111111111111111111111"), true);
+    assert.equal(internals.isValidCommitHash("not-a-commit"), false);
+    assert.equal(internals.isValidCommitHash("abc123456789012345678901234567890123456789"), false);
+  } finally {
+    delete process.env.PI_AGENT_BUNDLES_TEST_ROOT;
+    rmSync(testRoot, { recursive: true, force: true });
+  }
+});
+
+test("integration: pointer write failure returns without throwing on fallback persistence failure", async () => {
+  const testRoot = mkdtempSync(join(tmpdir(), "bundle-sync-pointer-fallback-"));
+  try {
+    const internals = await loadInternals(testRoot);
+    const commit = "ddd4444444444444444444444444444444444444444";
+    const releaseRoot = seedVerifiedRelease(internals, commit, "v1.0.0");
+    internals.writeState({
+      activeReleaseRoot: releaseRoot,
+      activeCommit: commit,
+      activeTag: "v1.0.0",
+    });
+
+    rmSync(internals.STATE_PATH, { force: true });
+    mkdirSync(internals.STATE_PATH);
+
+    const result = internals.commitActiveRelease(internals.readState(), {
+      releaseRoot: seedVerifiedRelease(internals, "eee5555555555555555555555555555555555555555", "v2.0.0"),
+      commit: "eee5555555555555555555555555555555555555555",
+      tag: "v2.0.0",
+      npmInstalled: false,
+    });
+
+    assert.equal(result.ok, false);
+    assert.match(result.error ?? "", /Failed to persist active release pointer|EISDIR|ENOTDIR|EPERM/);
+  } finally {
+    delete process.env.PI_AGENT_BUNDLES_TEST_ROOT;
+    rmSync(testRoot, { recursive: true, force: true });
+  }
+});
+
+test("integration: command timeout always settles and clears heartbeat", async () => {
+  const testRoot = mkdtempSync(join(tmpdir(), "bundle-sync-timeout-"));
+  try {
+    const internals = await loadInternals(testRoot);
+    mkdirSync(testRoot, { recursive: true });
+    assert.equal(internals.acquireActivationLock(), true);
+
+    const started = Date.now();
+    const result = await internals.runCommandWithLockHeartbeat(
+      process.execPath,
+      ["-e", "setInterval(() => {}, 1_000_000)"],
+      {
+        cwd: testRoot,
+        timeoutMs: 200,
+        failureMessage: "deterministic timeout test",
+      },
+    );
+    const elapsed = Date.now() - started;
+
+    assert.equal(result.ok, false);
+    assert.match(result.error ?? "", /timed out after 200ms/);
+    assert.ok(elapsed < internals.TIMEOUT_SETTLE_MS + 5_000, "timeout path should settle deterministically");
+
+    internals.refreshActivationLockHeartbeat();
+    const lock = internals.readActivationLock();
+    assert.equal(internals.isStaleActivationLock(lock), false);
+    internals.releaseActivationLock();
+  } finally {
+    delete process.env.PI_AGENT_BUNDLES_TEST_ROOT;
+    rmSync(testRoot, { recursive: true, force: true });
+  }
+});
