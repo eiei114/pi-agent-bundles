@@ -49,7 +49,7 @@ pi install git:github.com/eiei114/pi-agent-bundles -l
 - `@howaboua/pi-codex-conversion`
 - `pi-cursor-embedded-compat` (loaded before Cursor SDK)
 - `pi-cursor-sdk`
-- `@cursor/sdk` `1.0.23`
+- `@cursor/sdk` `1.0.31`
 - `@connectrpc/connect` `1.7.0`
 - `@bufbuild/protobuf` `1.10.0`
 - `pi-mcp-adapter`
