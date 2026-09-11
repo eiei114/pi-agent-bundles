@@ -24,8 +24,8 @@ updates:
       - "*"
     multi-ecosystem-group: all-dependencies
     open-pull-requests-limit: 1
-    # Cursor SDK 1.0.23 and Connect 1.7 require protobuf 1.x. Upgrade this
-    # dependency graph together after the SDK raises its contract.
+    # @cursor/sdk still pins protobuf 1.10.0 and Connect 1.x. Upgrade this
+    # dependency graph together only after npm metadata for @cursor/sdk changes.
     ignore:
       - dependency-name: "@bufbuild/protobuf"
         update-types:

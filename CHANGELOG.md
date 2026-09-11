@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Bump `@cursor/sdk` to `1.0.31` while keeping the protobuf 1.x / Connect 1.x graph required by the SDK.
+- Derive the Cursor dependency contract from the installed `@cursor/sdk` lock entry instead of hard-coded version triples.
 - Remove model-fallback loading and fallback seeding from Pi Spark Scout so provider failure stops for explicit routing instead of silently spending another model lane.
 - Activate bundle releases immutably: validate each tag in `.bundle-releases/<commit>/`, update only the active release pointer, and import role bundles from the verified root with cache-busted dynamic imports.
 - Serialize activation with an exclusive lock file that records pid/start time, refreshes heartbeat during validation, and reclaims only when the owner is gone or heartbeat is stale.
