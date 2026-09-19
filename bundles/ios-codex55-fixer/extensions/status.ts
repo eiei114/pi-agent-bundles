@@ -5,7 +5,7 @@ export default function IosCodex55FixerBundle(pi: ExtensionAPI) {
     description: "Show iOS Codex 5.5 Fixer bundle status",
     handler: async (_args, ctx) => {
       ctx.ui.notify(
-        "iOS Codex 5.5 Fixer bundle loaded. Xcode/SwiftPM/signing/build-log repair role with context-mode and MCP adapter support.",
+        "iOS Codex 5.5 Fixer bundle loaded. Xcode/SwiftPM/signing/build-log repair role with MCP adapter support.",
         "info",
       );
     },

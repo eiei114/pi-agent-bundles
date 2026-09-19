@@ -29,7 +29,6 @@ const genericBundleSlugs = [
   "cursor-composer-builder",
   "cursor-composer-core",
   "cursor-composer-connected",
-  "cursor-patch-runner",
   "codex-release-engineer",
   "pi-glm-builder",
   "pi-ace",
@@ -37,10 +36,8 @@ const genericBundleSlugs = [
   "pi-ace-air",
   "pi-ace-turbo",
   "pi-spark-router",
-  "pi-spark-scout",
   "pi-oss-orchestrator",
   "pi-extension-research-scout",
-  "codex-spark-patch-runner",
   "multica-intake-agent",
   "multica-maintenance",
 ];
@@ -58,61 +55,48 @@ const controllerBundlesWithoutSpine = new Set([
   "pi-ace-balanced",
   "pi-ace-turbo",
   "pi-spark-router",
-  "pi-spark-scout",
 ]);
 
-const bundlesWithoutModelFallback = new Set(["pi-spark-scout"]);
+const bundlesWithoutModelFallback = new Set();
 
 const genericExtensionProfiles = {
   "cursor-composer-builder": {
-    includes: ["context-mode", "pi-cursor-embedded-compat", "pi-cursor-sdk", "pi-multica-spine"],
+    includes: ["pi-cursor-embedded-compat", "pi-cursor-sdk", "pi-multica-spine"],
     excludes: ["pi-smart-fetch", "pi-mcp-adapter", "@howaboua/pi-codex-conversion"],
   },
   "cursor-composer-core": {
-    includes: ["context-mode", "pi-cursor-embedded-compat", "pi-cursor-sdk", "pi-multica-spine"],
+    includes: ["pi-cursor-embedded-compat", "pi-cursor-sdk", "pi-multica-spine"],
     excludes: ["pi-smart-fetch", "pi-mcp-adapter", "@howaboua/pi-codex-conversion"],
   },
   "cursor-composer-connected": {
-    includes: ["pi-mcp-adapter", "pi-smart-fetch", "context-mode", "pi-cursor-embedded-compat", "pi-cursor-sdk"],
-    excludes: ["@howaboua/pi-codex-conversion"],
-  },
-  "cursor-patch-runner": {
-    includes: ["context-mode", "pi-cursor-embedded-compat", "pi-cursor-sdk"],
-    excludes: ["pi-smart-fetch", "pi-mcp-adapter", "@howaboua/pi-codex-conversion"],
+    includes: ["pi-smart-fetch", "pi-cursor-embedded-compat", "pi-cursor-sdk"],
+    excludes: ["pi-mcp-adapter", "@howaboua/pi-codex-conversion"],
   },
   "codex-release-engineer": {
-    includes: ["pi-mcp-adapter", "context-mode", "@howaboua/pi-codex-conversion"],
-    excludes: ["@offbynan/pi-cursor-provider"],
+    includes: ["@howaboua/pi-codex-conversion"],
+    excludes: ["pi-mcp-adapter", "@offbynan/pi-cursor-provider"],
   },
   "pi-glm-builder": {
-    includes: ["pi-fff", "context-mode", "pi-multica-spine"],
+    includes: ["pi-fff", "pi-multica-spine"],
     excludes: ["@offbynan/pi-cursor-provider", "@howaboua/pi-codex-conversion"],
   },
   "pi-spark-router": {
-    includes: ["pi-fff", "context-mode"],
+    includes: ["pi-fff"],
     excludes: ["pi-multica-spine", "pi-smart-fetch", "@offbynan/pi-cursor-provider", "@howaboua/pi-codex-conversion"],
-  },
-  "pi-spark-scout": {
-    includes: ["pi-fff", "pi-smart-fetch", "context-mode"],
-    excludes: ["pi-multica-spine", "@offbynan/pi-cursor-provider", "@howaboua/pi-codex-conversion"],
-  },
-  "codex-spark-patch-runner": {
-    includes: ["pi-fff", "pi-mcp-adapter", "context-mode", "pi-multica-spine"],
-    excludes: ["@offbynan/pi-cursor-provider", "@howaboua/pi-codex-conversion"],
   },
 };
 
 const iosExtensionProfiles = {
   "ios-cursor-builder": {
-    includes: ["pi-mcp-adapter", "context-mode", "pi-cursor-embedded-compat", "pi-cursor-sdk"],
+    includes: ["pi-mcp-adapter", "pi-cursor-embedded-compat", "pi-cursor-sdk"],
     excludes: ["pi-smart-fetch", "@howaboua/pi-codex-conversion"],
   },
   "ios-codex54-builder": {
-    includes: ["pi-mcp-adapter", "context-mode", "@howaboua/pi-codex-conversion"],
+    includes: ["pi-mcp-adapter", "@howaboua/pi-codex-conversion"],
     excludes: ["pi-smart-fetch", "@offbynan/pi-cursor-provider"],
   },
   "ios-codex55-fixer": {
-    includes: ["pi-smart-fetch", "pi-mcp-adapter", "context-mode", "@howaboua/pi-codex-conversion"],
+    includes: ["pi-smart-fetch", "pi-mcp-adapter", "@howaboua/pi-codex-conversion"],
     excludes: ["@offbynan/pi-cursor-provider"],
   },
   "ios-codex55-planner": {
@@ -126,7 +110,6 @@ const bundledPackages = [
   "@connectrpc/connect",
   "@cursor/sdk",
   "@howaboua/pi-codex-conversion",
-  "context-mode",
   "pi-cursor-embedded-compat",
   "pi-cursor-sdk",
   "pi-fff",
@@ -164,31 +147,44 @@ test("Cursor compatibility shim loads before the singleton SDK", async () => {
   assert.ok(!loader.includes("@offbynan/pi-cursor-provider"));
 });
 
-test("Cursor Connected keeps MCP and smart-fetch above Core and Patch", async () => {
+test("Cursor Connected keeps smart-fetch above Core and the retired Patch lane", async () => {
   const core = await readFile(new URL("../bundles/cursor-composer-core/extensions/index.ts", import.meta.url), "utf8");
   const connected = await readFile(new URL("../bundles/cursor-composer-connected/extensions/index.ts", import.meta.url), "utf8");
   const builder = await readFile(new URL("../bundles/cursor-composer-builder/extensions/index.ts", import.meta.url), "utf8");
-  const patch = await readFile(new URL("../bundles/cursor-patch-runner/extensions/index.ts", import.meta.url), "utf8");
   const coreProfile = await readFile(new URL("../shared/extensions/cursor-composer-core-profile.ts", import.meta.url), "utf8");
   const connectedProfile = await readFile(new URL("../shared/extensions/cursor-composer-connected-profile.ts", import.meta.url), "utf8");
 
-  for (const extension of ["pi-smart-fetch", "pi-mcp-adapter"]) {
-    assert.ok(connectedProfile.includes(extension), `Connected should retain ${extension}`);
-    assert.ok(!coreProfile.includes(extension), `Core should omit ${extension}`);
-    assert.ok(!patch.includes(extension), `Patch should omit ${extension}`);
+  assert.ok(connectedProfile.includes("pi-smart-fetch"), "Connected should retain pi-smart-fetch");
+  assert.ok(!coreProfile.includes("pi-smart-fetch"), "Core should omit pi-smart-fetch");
+  for (const [name, source] of [["Core", coreProfile], ["Connected", connectedProfile]]) {
+    assert.ok(!source.includes("pi-mcp-adapter"), `${name} should omit the MCP adapter`);
   }
 
   assert.ok(core.includes("cursor-composer-core-profile"));
   assert.ok(connected.includes("cursor-composer-connected-profile"));
   assert.ok(builder.includes("cursor-composer-core-profile"));
+  await assert.rejects(
+    readFile(new URL("../bundles/cursor-patch-runner/extensions/index.ts", import.meta.url), "utf8"),
+    "the retired cursor-patch-runner bundle should not exist",
+  );
 });
 
 
-test("context-mode is loaded only through selected role bundles", async () => {
-  const builderIndex = await readFile(new URL("../bundles/ios-codex54-builder/extensions/index.ts", import.meta.url), "utf8");
-  const plannerIndex = await readFile(new URL("../bundles/ios-codex55-planner/extensions/index.ts", import.meta.url), "utf8");
-  assert.ok(builderIndex.includes("context-mode/build/adapters/pi/extension.js"));
-  assert.ok(!plannerIndex.includes("context-mode"));
+test("no bundle loads context-mode and the package no longer depends on it", async () => {
+  const loader = await readFile(new URL("../shared/extensions/agent-bundle-loader.ts", import.meta.url), "utf8");
+  for (const slug of allBundleSlugs) {
+    const index = await readFile(new URL(`../bundles/${slug}/extensions/index.ts`, import.meta.url), "utf8");
+    assert.ok(!index.includes("context-mode"), `${slug} should not load context-mode`);
+  }
+  for (const profile of ["cursor-composer-core-profile.ts", "cursor-composer-connected-profile.ts"]) {
+    const source = await readFile(new URL(`../shared/extensions/${profile}`, import.meta.url), "utf8");
+    assert.ok(!source.includes("context-mode"), `${profile} should not load context-mode`);
+  }
+  for (const retired of ["cursor-patch-runner", "codex-spark-patch-runner", "pi-spark-scout"]) {
+    assert.ok(!loader.includes(`"${retired}"`), `${retired} should be unregistered from the bundle loader`);
+  }
+  assert.equal(packageJson.dependencies["context-mode"], undefined, "context-mode should not be a dependency");
+  assert.ok(!packageJson.bundledDependencies.includes("context-mode"));
   assert.ok(!packageJson.pi.skills.includes("./node_modules/context-mode/skills"));
 });
 

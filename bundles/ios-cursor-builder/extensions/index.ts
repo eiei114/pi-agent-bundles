@@ -5,8 +5,7 @@ import fff from "../../../node_modules/pi-fff/index.ts";
 import nonAsciiGuard from "../../../node_modules/pi-fff-non-ascii-guard/extensions/pi-fff-non-ascii-guard.ts";
 import mcpAdapter from "../../../node_modules/pi-mcp-adapter/index.ts";
 import multicaSpine from "../../../node_modules/pi-multica-spine/extensions/index.ts";
-import contextMode from "../../../node_modules/context-mode/build/adapters/pi/extension.js";
-import postContextGuard from "../../../shared/post-context-mode/extensions/multica-run-guard.ts";
+import postContextGuard from "../../../shared/multica-run-guard/extensions/multica-run-guard.ts";
 import loadCursorSdk from "../../../shared/extensions/load-cursor-sdk.mjs";
 import status from "./status.ts";
 
@@ -17,7 +16,6 @@ export default async function IosCursorBuilderBundle(pi: ExtensionAPI) {
   await nonAsciiGuard(pi);
   await mcpAdapter(pi);
   await multicaSpine(pi);
-  await contextMode(pi);
   await postContextGuard(pi);
   await loadCursorSdk(pi);
   await status(pi);

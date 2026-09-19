@@ -4,7 +4,7 @@ Bundle slug: `cursor-composer-core`
 
 ## Purpose
 
-Cursor implementation role with local coding tools only. Loads Cursor SDK, spine, fff/non-ASCII guard, and context-mode without MCP or smart-fetch.
+Cursor implementation role with local coding tools only. Loads Cursor SDK, spine, and fff/non-ASCII guard without MCP, smart-fetch, or context-mode.
 
 ## Resources
 
