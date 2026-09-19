@@ -5,8 +5,7 @@ import fff from "../../../node_modules/pi-fff/index.ts";
 import nonAsciiGuard from "../../../node_modules/pi-fff-non-ascii-guard/extensions/pi-fff-non-ascii-guard.ts";
 import mcpAdapter from "../../../node_modules/pi-mcp-adapter/index.ts";
 import multicaSpine from "../../../node_modules/pi-multica-spine/extensions/index.ts";
-import contextMode from "../../../node_modules/context-mode/build/adapters/pi/extension.js";
-import postContextGuard from "../../../shared/post-context-mode/extensions/multica-run-guard.ts";
+import postContextGuard from "../../../shared/multica-run-guard/extensions/multica-run-guard.ts";
 import codexConversion from "../../../node_modules/@howaboua/pi-codex-conversion/src/index.ts";
 import status from "./status.ts";
 
@@ -17,7 +16,6 @@ export default async function IosCodex54BuilderBundle(pi: ExtensionAPI) {
   await nonAsciiGuard(pi);
   await mcpAdapter(pi);
   await multicaSpine(pi);
-  await contextMode(pi);
   await postContextGuard(pi);
   await codexConversion(pi);
   await status(pi);

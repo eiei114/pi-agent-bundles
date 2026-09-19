@@ -44,7 +44,7 @@ Keep Multica agent config portable: install the Git package on the runtime, then
 
 Agent MCP config should be stored through `multica agent update --mcp-config-file`, not passed as a local path.
 
-Extension profile: Cursor provider, file search, build/test MCP, context-mode, and bundle status. No smart-fetch by default.
+Extension profile: Cursor provider, file search, build/test MCP, and bundle status. No smart-fetch or context-mode by default.
 
 ## Rules
 

@@ -1,6 +1,15 @@
 # Changelog
 
-## Unreleased
+## 0.10.0
+
+### Removed
+
+- Remove `context-mode` from every bundle and from the package dependencies. Measured fixed cost in the live Multica shape was +28.5KB first-request payload, +11 tool schemas, and +5.9K input tokens per request, while session tool logs show `ctx_*` at 14 calls out of 15,260 in the last 14 days.
+- Remove the `cursor-patch-runner`, `codex-spark-patch-runner`, and `pi-spark-scout` bundles and their loader slugs. Those lanes are retired; their scheduled work moves to the Luna controller lane.
+- Remove `pi-mcp-adapter` from the `codex-release-engineer` bundle and the `cursor-composer-connected` profile. The iOS bundles keep it because they use `xcodebuildmcp`.
+- Remove the context-mode anchor stripping from the Multica run guard. The guard itself (assigned-issue start plus one nudge) is unchanged in intent.
+
+### Changed
 
 - Bump `@cursor/sdk` to `1.0.31` while keeping the protobuf 1.x / Connect 1.x graph required by the SDK.
 - Derive the Cursor dependency contract from the installed `@cursor/sdk` lock entry instead of hard-coded version triples.

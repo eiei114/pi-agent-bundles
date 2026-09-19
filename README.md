@@ -45,7 +45,6 @@ pi install git:github.com/eiei114/pi-agent-bundles -l
 - `pi-fff-non-ascii-guard`
 - `pi-smart-fetch`
 - `pi-multica-spine`
-- `context-mode`
 - `@howaboua/pi-codex-conversion`
 - `pi-cursor-embedded-compat` (loaded before Cursor SDK)
 - `pi-cursor-sdk`
@@ -87,15 +86,12 @@ Each bundle has its own `bundles/<slug>/README.md` and unique `/<slug>:bundle-st
 - `pi-ace-air`
 - `pi-ace-turbo`
 - `pi-spark-router`
-- `pi-spark-scout`
 - `pi-oss-orchestrator`
 - `pi-extension-research-scout`
 - `pi-glm-builder`
 - `cursor-composer-builder`
 - `cursor-composer-core`
 - `cursor-composer-connected`
-- `cursor-patch-runner`
-- `codex-spark-patch-runner`
 - `codex-release-engineer`
 - `multica-intake-agent`
 - `ios-cursor-builder`
@@ -114,7 +110,7 @@ Generic iOS Multica agents should use the dedicated iOS bundle slices:
 
 `pi-mcp-adapter` is bundled so agents can use MCP servers such as `xcodebuildmcp` without loading every MCP tool directly into the prompt. Each iOS bundle includes a secret-free `mcp.json` template, but Multica agents should store that JSON through `multica agent update --mcp-config-file bundles/<slug>/mcp.json` instead of passing a local `--mcp-config C:/...` path in custom args.
 
-The iOS bundle README files intentionally use role-specific git-package args rather than loading the full extension set everywhere: Cursor/UI and Codex builder/fixer bundles include MCP/context-mode, while the planner bundle keeps only planning/review essentials.
+The iOS bundle README files intentionally use role-specific git-package args rather than loading the full extension set everywhere: Cursor/UI and Codex builder/fixer bundles include MCP, while the planner bundle keeps only planning/review essentials.
 
 ## Shared fallback seed
 
@@ -146,4 +142,4 @@ See `docs/bundle-authoring.md` before adding or changing a bundle.
 
 ## Multica run guard
 
-`v0.5.0` keeps context-mode tools enabled while preventing context-mode startup/status text from becoming the task. For assigned Multica issue runs, the bundle strips the context-mode routing anchor from the final user-context message and injects a guard that starts with `multica issue get <issue> --output json`.
+For assigned Multica issue runs, the bundle injects a guard that starts with `multica issue get <issue> --output json` and keeps the run on the assigned issue workflow instead of asking for a new instruction. The guard is shared infrastructure; it does not load any context-folding extension. `v0.5.0` originally shipped this guard together with `context-mode` anchor stripping, and `v0.10.0` removes `context-mode` entirely, so the anchor handling is gone too.
