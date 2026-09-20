@@ -1,8 +1,9 @@
 #!/usr/bin/env node
 
-import { readFile } from "node:fs/promises";
-import { fileURLToPath } from "node:url";
-import { resolve } from "node:path";
+import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join, resolve } from "node:path";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
 function parseMajor(version) {
   const match = /^(\d+)/.exec(version ?? "");
@@ -99,12 +100,85 @@ export function validateCursorDependencyContract(packageJson, packageLock) {
   return errors;
 }
 
+/**
+ * `pi-cursor-embedded-compat` fails closed for any graph that is missing from
+ * its `SUPPORT_REGISTRY`, and that failure only surfaces when a real Cursor
+ * task starts. Node refuses to type-strip `.ts` files inside `node_modules`, so
+ * read the published source and import it from a scratch directory to evaluate
+ * the registry the runtime will actually use.
+ */
+export async function loadRegisteredGraphs(root = resolve(fileURLToPath(new URL("..", import.meta.url)))) {
+  const registryPath = join(root, "node_modules", "pi-cursor-embedded-compat", "lib", "registry.ts");
+  let source;
+  try {
+    source = await readFile(registryPath, "utf8");
+  } catch {
+    return { ok: false, error: `pi-cursor-embedded-compat registry is unavailable at ${registryPath}; run npm ci first` };
+  }
+
+  const scratch = await mkdtemp(join(tmpdir(), "pi-agent-bundles-compat-registry-"));
+  try {
+    const copy = join(scratch, "registry.ts");
+    await writeFile(copy, source, "utf8");
+    const module = await import(pathToFileURL(copy).href);
+    const graphs = module.SUPPORT_REGISTRY?.map((entry) => entry.graph);
+    if (!Array.isArray(graphs) || graphs.length === 0) {
+      return { ok: false, error: "pi-cursor-embedded-compat SUPPORT_REGISTRY is empty or unreadable" };
+    }
+    return { ok: true, graphs };
+  } catch (error) {
+    return { ok: false, error: `pi-cursor-embedded-compat registry could not be evaluated: ${error.message}` };
+  } finally {
+    await rm(scratch, { recursive: true, force: true });
+  }
+}
+
+export function resolveBundleGraph(packageJson, packageLock) {
+  const contract = resolveCursorDependencyContract(packageJson, packageLock);
+  const piCursorSdk = packageJson.dependencies?.["pi-cursor-sdk"];
+  if (!contract || !piCursorSdk) return null;
+
+  return {
+    piCursorSdk,
+    cursorSdk: contract["@cursor/sdk"],
+    connect: contract["@connectrpc/connect"],
+    protobuf: contract["@bufbuild/protobuf"],
+  };
+}
+
+export function validateRegisteredGraph(packageJson, packageLock, registeredGraphs) {
+  const graph = resolveBundleGraph(packageJson, packageLock);
+  if (!graph) {
+    return ["Could not resolve the bundle Cursor dependency graph from package.json and package-lock.json"];
+  }
+
+  const registered = (Array.isArray(registeredGraphs) ? registeredGraphs : []).some(
+    (candidate) =>
+      candidate?.piCursorSdk === graph.piCursorSdk &&
+      candidate?.cursorSdk === graph.cursorSdk &&
+      candidate?.connect === graph.connect &&
+      candidate?.protobuf === graph.protobuf,
+  );
+  if (registered) return [];
+
+  return [
+    `pi-cursor-sdk ${graph.piCursorSdk} / @cursor/sdk ${graph.cursorSdk} / @connectrpc/connect ${graph.connect} / @bufbuild/protobuf ${graph.protobuf} is not registered in pi-cursor-embedded-compat`,
+    "register the graph in the shim and publish it before activating this bundle graph",
+  ];
+}
+
 async function main() {
   const root = resolve(fileURLToPath(new URL("..", import.meta.url)));
   const packageJson = JSON.parse(await readFile(resolve(root, "package.json"), "utf8"));
   const packageLock = JSON.parse(await readFile(resolve(root, "package-lock.json"), "utf8"));
   const contract = resolveCursorDependencyContract(packageJson, packageLock);
   const errors = validateCursorDependencyContract(packageJson, packageLock);
+  const registry = await loadRegisteredGraphs(root);
+  if (registry.ok) {
+    errors.push(...validateRegisteredGraph(packageJson, packageLock, registry.graphs));
+  } else {
+    errors.push(registry.error);
+  }
 
   if (errors.length > 0) {
     console.error("Cursor dependency contract failed:");
@@ -114,7 +188,7 @@ async function main() {
   }
 
   console.log(
-    `Cursor dependency contract OK: protobuf ${contract["@bufbuild/protobuf"]} / connect ${contract["@connectrpc/connect"]} / SDK ${contract["@cursor/sdk"]}`,
+    `Cursor dependency contract OK: protobuf ${contract["@bufbuild/protobuf"]} / connect ${contract["@connectrpc/connect"]} / SDK ${contract["@cursor/sdk"]} / registered graph verified`,
   );
 }
 

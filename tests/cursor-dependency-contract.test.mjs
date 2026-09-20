@@ -3,12 +3,34 @@ import { readFile } from "node:fs/promises";
 import test from "node:test";
 
 import {
+  loadRegisteredGraphs,
+  resolveBundleGraph,
   resolveCursorDependencyContract,
   validateCursorDependencyContract,
+  validateRegisteredGraph,
 } from "../scripts/check-cursor-dependency-contract.mjs";
 
 const packageJson = JSON.parse(await readFile(new URL("../package.json", import.meta.url), "utf8"));
 const packageLock = JSON.parse(await readFile(new URL("../package-lock.json", import.meta.url), "utf8"));
+
+test("the installed shim registers the bundle dependency graph", async () => {
+  const registry = await loadRegisteredGraphs();
+  assert.equal(registry.ok, true, registry.error);
+  assert.deepEqual(validateRegisteredGraph(packageJson, packageLock, registry.graphs), []);
+});
+
+test("an unregistered Cursor SDK graph fails closed", () => {
+  const driftedPackage = structuredClone(packageJson);
+  const driftedLock = structuredClone(packageLock);
+  driftedPackage.dependencies["@cursor/sdk"] = "1.0.32";
+  driftedLock.packages[""].dependencies["@cursor/sdk"] = "1.0.32";
+  driftedLock.packages["node_modules/@cursor/sdk"].version = "1.0.32";
+
+  const registered = [resolveBundleGraph(packageJson, packageLock)];
+  const errors = validateRegisteredGraph(driftedPackage, driftedLock, registered);
+
+  assert.ok(errors.some((error) => error.includes("is not registered in pi-cursor-embedded-compat")));
+});
 
 test("Cursor dependency contract matches the lockfile", () => {
   assert.deepEqual(validateCursorDependencyContract(packageJson, packageLock), []);

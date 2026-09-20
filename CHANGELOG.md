@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.10.1
+
+### Fixed
+
+- Pin `pi-cursor-embedded-compat` to `0.2.0` so the `pi-cursor-sdk 0.3.6` / `@cursor/sdk 1.0.31` graph is registered. With `0.1.0` the shim failed closed for every Cursor lane: provider startup ended with `unsupported_graph`, and each Multica task died as `pi exited with error: exit status 1` after ~6s with no tools run.
+
+### Changed
+
+- Restore dependency-drift detection: `scripts/check-cursor-dependency-contract.mjs` now evaluates the installed shim `SUPPORT_REGISTRY` and fails when the bundle graph is not registered there. The rewritten version-derived contract alone accepted the `0.3.6` bump that the shim could not patch.
+- Run `npm ci` before the contract check in CI, because the guard reads the installed shim.
+
 ## 0.10.0
 
 ### Removed
