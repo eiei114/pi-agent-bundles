@@ -22,6 +22,7 @@ const forbiddenGlobalExtensions = [
   "./node_modules/@offbynan/pi-cursor-provider/index.ts",
   "./node_modules/pi-cursor-embedded-compat/extensions/index.ts",
   "./node_modules/pi-cursor-sdk/src/index.ts",
+  "./node_modules/@rahularya01/pi-cursor/dist/index.js",
 ];
 
 
@@ -61,15 +62,15 @@ const bundlesWithoutModelFallback = new Set();
 
 const genericExtensionProfiles = {
   "cursor-composer-builder": {
-    includes: ["pi-cursor-embedded-compat", "pi-cursor-sdk", "pi-multica-spine"],
+    includes: ["@rahularya01/pi-cursor", "pi-multica-spine"],
     excludes: ["pi-smart-fetch", "pi-mcp-adapter", "@howaboua/pi-codex-conversion"],
   },
   "cursor-composer-core": {
-    includes: ["pi-cursor-embedded-compat", "pi-cursor-sdk", "pi-multica-spine"],
+    includes: ["@rahularya01/pi-cursor", "pi-multica-spine"],
     excludes: ["pi-smart-fetch", "pi-mcp-adapter", "@howaboua/pi-codex-conversion"],
   },
   "cursor-composer-connected": {
-    includes: ["pi-smart-fetch", "pi-cursor-embedded-compat", "pi-cursor-sdk"],
+    includes: ["pi-smart-fetch", "@rahularya01/pi-cursor"],
     excludes: ["pi-mcp-adapter", "@howaboua/pi-codex-conversion"],
   },
   "codex-release-engineer": {
@@ -88,7 +89,7 @@ const genericExtensionProfiles = {
 
 const iosExtensionProfiles = {
   "ios-cursor-builder": {
-    includes: ["pi-mcp-adapter", "pi-cursor-embedded-compat", "pi-cursor-sdk"],
+    includes: ["pi-mcp-adapter", "@rahularya01/pi-cursor"],
     excludes: ["pi-smart-fetch", "@howaboua/pi-codex-conversion"],
   },
   "ios-codex54-builder": {
@@ -110,6 +111,7 @@ const bundledPackages = [
   "@connectrpc/connect",
   "@cursor/sdk",
   "@howaboua/pi-codex-conversion",
+  "@rahularya01/pi-cursor",
   "pi-cursor-embedded-compat",
   "pi-cursor-sdk",
   "pi-fff",
@@ -141,7 +143,22 @@ test("package declares all Multica agent extension dependencies", () => {
   }
 });
 
-test("Cursor compatibility shim loads before the singleton SDK", async () => {
+test("Cursor bundles load exactly one Cursor provider", async () => {
+  const oauthLoader = await readFile(new URL("../shared/extensions/load-cursor-oauth.mjs", import.meta.url), "utf8");
+  assert.ok(oauthLoader.includes("@rahularya01/pi-cursor"), "the OAuth loader must pin @rahularya01/pi-cursor");
+  assert.ok(!oauthLoader.includes("pi-cursor-sdk"), "the OAuth loader must not load the API-key SDK provider");
+  assert.ok(!oauthLoader.includes("@offbynan/pi-cursor-provider"));
+
+  const coreProfile = await readFile(new URL("../shared/extensions/cursor-composer-core-profile.ts", import.meta.url), "utf8");
+  assert.ok(coreProfile.includes("load-cursor-oauth.mjs"), "the Core profile should load the OAuth provider");
+  assert.ok(!coreProfile.includes("load-cursor-sdk.mjs"), "the Core profile must not load two Cursor providers");
+
+  const connectedProfile = await readFile(new URL("../shared/extensions/cursor-composer-connected-profile.ts", import.meta.url), "utf8");
+  assert.ok(connectedProfile.includes("cursor-composer-core-profile"), "Connected should reuse the Core profile");
+  assert.ok(!connectedProfile.includes("load-cursor-sdk.mjs"), "Connected must not load two Cursor providers");
+});
+
+test("the retained SDK loader keeps the compatibility shim before the singleton", async () => {
   const loader = await readFile(new URL("../shared/extensions/load-cursor-sdk.mjs", import.meta.url), "utf8");
   assert.ok(loader.indexOf("pi-cursor-embedded-compat") < loader.indexOf("pi-cursor-sdk"));
   assert.ok(!loader.includes("@offbynan/pi-cursor-provider"));
@@ -206,7 +223,7 @@ test("package includes non-iOS Multica agent bundle loader profiles", async () =
     const readme = await readFile(new URL(`../bundles/${slug}/README.md`, import.meta.url), "utf8");
     const status = await readFile(new URL(`../bundles/${slug}/extensions/status.ts`, import.meta.url), "utf8");
     const index = await readFile(new URL(`../bundles/${slug}/extensions/index.ts`, import.meta.url), "utf8");
-    const cursorLoader = await readFile(new URL("../shared/extensions/load-cursor-sdk.mjs", import.meta.url), "utf8");
+    const cursorLoader = await readFile(new URL("../shared/extensions/load-cursor-oauth.mjs", import.meta.url), "utf8");
     const coreProfile = slug.startsWith("cursor-composer")
       ? await readFile(new URL("../shared/extensions/cursor-composer-core-profile.ts", import.meta.url), "utf8")
       : "";
@@ -263,7 +280,7 @@ test("package includes dedicated generic iOS agent bundles", async () => {
     const loader = await readFile(new URL("../shared/extensions/agent-bundle-loader.ts", import.meta.url), "utf8");
     assert.ok(loader.includes(`"${slug}"`), `${slug} should be registered in the bundle loader`);
     const index = await readFile(new URL(`../bundles/${slug}/extensions/index.ts`, import.meta.url), "utf8");
-    const cursorLoader = await readFile(new URL("../shared/extensions/load-cursor-sdk.mjs", import.meta.url), "utf8");
+    const cursorLoader = await readFile(new URL("../shared/extensions/load-cursor-oauth.mjs", import.meta.url), "utf8");
     const profile = iosExtensionProfiles[slug];
     const profileSource = `${index}\n${cursorLoader}`;
     for (const needle of profile.includes) {

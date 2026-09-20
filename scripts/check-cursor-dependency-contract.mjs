@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 
+import { existsSync } from "node:fs";
 import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
@@ -146,8 +147,7 @@ export function resolveBundleGraph(packageJson, packageLock) {
   };
 }
 
-export function validateRegisteredGraph(packageJson, packageLock, registeredGraphs) {
-  const graph = resolveBundleGraph(packageJson, packageLock);
+export function validateRegisteredGraph(packageJson, packageLock, registeredGraphs) {  const graph = resolveBundleGraph(packageJson, packageLock);
   if (!graph) {
     return ["Could not resolve the bundle Cursor dependency graph from package.json and package-lock.json"];
   }
@@ -167,6 +167,42 @@ export function validateRegisteredGraph(packageJson, packageLock, registeredGrap
   ];
 }
 
+/**
+ * Cursor bundles load one OAuth provider, so the pin must stay exact and its
+ * extension entry must exist in the installed tree; a floating range would let
+ * the provider drift without a bundle review.
+ */
+export async function validateCursorProviderPin(root, packageJson) {
+  const name = "@rahularya01/pi-cursor";
+  const declared = packageJson.dependencies?.[name];
+  if (!declared) {
+    return [`${name} must be declared as the single Cursor provider`];
+  }
+
+  const errors = [];
+  if (!/^\d+\.\d+\.\d+$/.test(declared)) {
+    errors.push(`${name} must be pinned to an exact version; found ${declared}`);
+  }
+
+  const packageRoot = join(root, "node_modules", name);
+  try {
+    const manifest = JSON.parse(await readFile(join(packageRoot, "package.json"), "utf8"));
+    if (manifest.version !== declared) {
+      errors.push(`${name}: installed version ${manifest.version} does not match the pin ${declared}`);
+    }
+    const entry = manifest.pi?.extensions?.[0];
+    if (typeof entry !== "string") {
+      errors.push(`${name}: manifest declares no pi extension entry`);
+    } else if (!existsSync(join(packageRoot, entry))) {
+      errors.push(`${name}: extension entry ${entry} is missing from the installed package`);
+    }
+  } catch {
+    errors.push(`${name} is not installed at ${packageRoot}; run npm ci first`);
+  }
+
+  return errors;
+}
+
 async function main() {
   const root = resolve(fileURLToPath(new URL("..", import.meta.url)));
   const packageJson = JSON.parse(await readFile(resolve(root, "package.json"), "utf8"));
@@ -179,6 +215,7 @@ async function main() {
   } else {
     errors.push(registry.error);
   }
+  errors.push(...(await validateCursorProviderPin(root, packageJson)));
 
   if (errors.length > 0) {
     console.error("Cursor dependency contract failed:");
@@ -187,8 +224,9 @@ async function main() {
     return;
   }
 
+  const providerPin = packageJson.dependencies["@rahularya01/pi-cursor"];
   console.log(
-    `Cursor dependency contract OK: protobuf ${contract["@bufbuild/protobuf"]} / connect ${contract["@connectrpc/connect"]} / SDK ${contract["@cursor/sdk"]} / registered graph verified`,
+    `Cursor dependency contract OK: provider ${providerPin} / protobuf ${contract["@bufbuild/protobuf"]} / connect ${contract["@connectrpc/connect"]} / SDK ${contract["@cursor/sdk"]} / registered graph verified`,
   );
 }
 

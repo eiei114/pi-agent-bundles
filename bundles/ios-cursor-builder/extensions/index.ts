@@ -6,7 +6,7 @@ import nonAsciiGuard from "../../../node_modules/pi-fff-non-ascii-guard/extensio
 import mcpAdapter from "../../../node_modules/pi-mcp-adapter/index.ts";
 import multicaSpine from "../../../node_modules/pi-multica-spine/extensions/index.ts";
 import postContextGuard from "../../../shared/multica-run-guard/extensions/multica-run-guard.ts";
-import loadCursorSdk from "../../../shared/extensions/load-cursor-sdk.mjs";
+import loadCursorOauth from "../../../shared/extensions/load-cursor-oauth.mjs";
 import status from "./status.ts";
 
 export default async function IosCursorBuilderBundle(pi: ExtensionAPI) {
@@ -17,6 +17,6 @@ export default async function IosCursorBuilderBundle(pi: ExtensionAPI) {
   await mcpAdapter(pi);
   await multicaSpine(pi);
   await postContextGuard(pi);
-  await loadCursorSdk(pi);
+  await loadCursorOauth(pi);
   await status(pi);
 }

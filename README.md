@@ -46,8 +46,9 @@ pi install git:github.com/eiei114/pi-agent-bundles -l
 - `pi-smart-fetch`
 - `pi-multica-spine`
 - `@howaboua/pi-codex-conversion`
-- `pi-cursor-embedded-compat` (loaded before Cursor SDK)
-- `pi-cursor-sdk`
+- `@rahularya01/pi-cursor` (Cursor OAuth provider, loaded by Cursor bundles)
+- `pi-cursor-embedded-compat` (retained for SDK switch-back)
+- `pi-cursor-sdk` (retained for SDK switch-back)
 - `@cursor/sdk` `1.0.31`
 - `@connectrpc/connect` `1.7.0`
 - `@bufbuild/protobuf` `1.10.0`
@@ -74,9 +75,9 @@ pi list
 test -f ~/.pi/agent/git/github.com/eiei114/pi-agent-bundles/shared/extensions/agent-bundle-loader.ts
 ```
 
-Cursor bundles load the guarded compatibility shim before the `pi-cursor-sdk` singleton. The old OAuth Cursor provider is intentionally not bundled. First rollout uses an exact Git tag; keep the previous explicit SDK profile available for rollback.
+Cursor bundles load the single Cursor provider through `shared/extensions/load-cursor-oauth.mjs`: `@rahularya01/pi-cursor`, which authenticates with Cursor's own OAuth login (`/login cursor`, the Cursor app, or the Cursor CLI) and needs no API key. Load only one Cursor provider per runtime; the retained `shared/extensions/load-cursor-sdk.mjs` keeps the API-key SDK path available for an explicit switch-back run and is not imported by any bundle.
 
-The shim version must be one that registers the pinned Cursor graph; otherwise the shim fails closed and every Cursor task dies at provider startup. `npm run check:cursor-deps` evaluates the installed shim registry and fails when the `pi-cursor-sdk` / `@cursor/sdk` pair is not registered.
+Both Cursor provider kinds must be exactly pinned. `npm run check:cursor-deps` verifies that `@rahularya01/pi-cursor` is pinned to an installed version with a loadable extension entry, and that the retained `pi-cursor-sdk` / `@cursor/sdk` pair is registered in the installed `pi-cursor-embedded-compat` registry; otherwise the SDK path would fail closed at provider startup.
 
 ## Included bundles
 

@@ -5,7 +5,7 @@ import fff from "../../node_modules/pi-fff/index.ts";
 import nonAsciiGuard from "../../node_modules/pi-fff-non-ascii-guard/extensions/pi-fff-non-ascii-guard.ts";
 import multicaSpine from "../../node_modules/pi-multica-spine/extensions/index.ts";
 import postContextGuard from "../multica-run-guard/extensions/multica-run-guard.ts";
-import loadCursorSdk from "./load-cursor-sdk.mjs";
+import loadCursorOauth from "./load-cursor-oauth.mjs";
 
 export default async function loadCursorComposerCore(pi: ExtensionAPI) {
   await modelFallback(pi);
@@ -14,5 +14,5 @@ export default async function loadCursorComposerCore(pi: ExtensionAPI) {
   await nonAsciiGuard(pi);
   await multicaSpine(pi);
   await postContextGuard(pi);
-  await loadCursorSdk(pi);
+  await loadCursorOauth(pi);
 }
