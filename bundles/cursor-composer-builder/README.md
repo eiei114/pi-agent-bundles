@@ -9,7 +9,8 @@ Cursor implementation role for bounded but ambiguous build tasks. This slug rema
 ## Resources
 
 - `extensions/status.ts` — registers `/cursor-composer-builder:bundle-status` for load verification.
-- `shared/extensions/load-cursor-sdk.mjs` — loads `pi-cursor-embedded-compat` before the `pi-cursor-sdk` singleton.
+- `shared/extensions/load-cursor-oauth.mjs` — loads the single `@rahularya01/pi-cursor` OAuth provider for this bundle.
+- `shared/extensions/load-cursor-sdk.mjs` — retained `pi-cursor-embedded-compat` + `pi-cursor-sdk` API-key path for an explicit switch-back run; not loaded by this bundle.
 - `skills/` — reserved for future agent-specific skills.
 
 ## Recommended Multica custom args

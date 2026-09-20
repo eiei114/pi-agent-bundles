@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.11.0
+
+### Changed
+
+- Cursor bundles now load the single Cursor provider through `shared/extensions/load-cursor-oauth.mjs`: `@rahularya01/pi-cursor` `1.4.36`, which authenticates with Cursor's own OAuth login (`/login cursor`, the Cursor app, or the Cursor CLI). Affected bundles: `cursor-composer-core`, `cursor-composer-builder`, `cursor-composer-connected`, and `ios-cursor-builder`.
+- Retain `pi-cursor-embedded-compat` `0.2.0` with `pi-cursor-sdk` `0.3.6` and the `@cursor/sdk` / Connect / protobuf 1.x graph as the explicit API-key switch-back path. The SDK provider is no longer imported by any bundle, so only one Cursor provider loads per runtime.
+- Extend `npm run check:cursor-deps` to verify that `@rahularya01/pi-cursor` is pinned to an installed version whose extension entry exists, in addition to the retained SDK graph registration check.
+
+### Why
+
+With only the API-key SDK path, every Cursor lane needed a Cursor SDK API key that was not provisioned; provider startup failed and the remaining Multica Cursor tasks could not run. The OAuth provider reuses the existing Cursor login and needs no API key.
+
 ## 0.10.1
 
 ### Fixed
