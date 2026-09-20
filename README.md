@@ -76,6 +76,8 @@ test -f ~/.pi/agent/git/github.com/eiei114/pi-agent-bundles/shared/extensions/ag
 
 Cursor bundles load the guarded compatibility shim before the `pi-cursor-sdk` singleton. The old OAuth Cursor provider is intentionally not bundled. First rollout uses an exact Git tag; keep the previous explicit SDK profile available for rollback.
 
+The shim version must be one that registers the pinned Cursor graph; otherwise the shim fails closed and every Cursor task dies at provider startup. `npm run check:cursor-deps` evaluates the installed shim registry and fails when the `pi-cursor-sdk` / `@cursor/sdk` pair is not registered.
+
 ## Included bundles
 
 Each bundle has its own `bundles/<slug>/README.md` and unique `/<slug>:bundle-status` command.
