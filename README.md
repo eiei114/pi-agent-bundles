@@ -79,6 +79,8 @@ Cursor bundles load the single Cursor provider through `shared/extensions/load-c
 
 Both Cursor provider kinds must be exactly pinned. `npm run check:cursor-deps` verifies that `@rahularya01/pi-cursor` is pinned to an installed version with a loadable extension entry, and that the retained `pi-cursor-sdk` / `@cursor/sdk` pair is registered in the installed `pi-cursor-embedded-compat` registry; otherwise the SDK path would fail closed at provider startup.
 
+Cursor bundles also apply bounded headless tuning defaults before the provider starts (`shared/extensions/cursor-tuning.mjs`): a parked mid-tool bridge now fails and retries within two minutes instead of holding the task slot for the package default of one hour. Explicit environment values win, including `0`.
+
 ## Included bundles
 
 Each bundle has its own `bundles/<slug>/README.md` and unique `/<slug>:bundle-status` command.

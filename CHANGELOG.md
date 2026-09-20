@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.11.1
+
+### Fixed
+
+- Bound a parked Cursor turn to two minutes in Cursor bundles. `@rahularya01/pi-cursor` pauses the stream idle watchdog while a mid-tool bridge waits for tool results, and its `PI_CURSOR_ACTIVE_BRIDGE_TTL_MS` default is one hour, so a parked headless run held a Multica task slot for 31 minutes with a live process and an open Cursor socket. `shared/extensions/cursor-tuning.mjs` now applies `PI_CURSOR_ACTIVE_BRIDGE_TTL_MS=120000`, `PI_CURSOR_STREAM_IDLE_TIMEOUT_MS=120000`, `PI_CURSOR_RESUME_IDLE_TIMEOUT_MS=120000`, and `PI_CURSOR_STREAM_IDLE_MAX_RETRIES=2` before the provider starts. Explicit environment values win, including `0`.
+
+### Context
+
+Three Multica runs hit `wire_drift: conversationCheckpointUpdate.payload#38,39` right before parking. That field drift is upstream and unfixed in 1.4.36; this change makes the failure bounded and retryable instead of an unbounded hang.
+
 ## 0.11.0
 
 ### Changed
