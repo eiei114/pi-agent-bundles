@@ -7,7 +7,9 @@ export default function multicaRunGuard(pi: ExtensionAPI) {
   let guardInjected = false;
 
   pi.on("before_agent_start", (event) => {
-    const prompt = String(event?.prompt ?? "");
+    // SDK 1.5 split before_agent_start into user and custom-message events; only
+    // the user event carries the prompt. Older runtimes send `prompt` unconditionally.
+    const prompt = event && "prompt" in event ? String(event.prompt ?? "") : "";
     const match = prompt.match(ASSIGNED_ISSUE_RE);
     assignedIssue = match?.[1];
     guardInjected = false;
